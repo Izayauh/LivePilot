@@ -487,6 +487,20 @@ Use this checklist on your Ableton machine before deployment sign-off.
    - No extra LLM calls beyond `1` per chain intent.
    - No unexpected errors in pipeline result or logs.
 
+### artist-os integration
+
+A narrow local-first adapter boundary for `artist-os` is documented in:
+- `docs/artist-os-integration.md`
+
+Canonical contract source:
+- `C:\Users\isaia\Documents\Business\Zay_Music\docs\ableton-integration-contract.md`
+
+Recommended first integration task:
+- `prepare-writing-session`
+
+Recommended transport:
+- Windows-side subprocess CLI with request/result JSON files
+
 ### Process Control
 
 Jarvis can programmatically manage the Ableton process:
