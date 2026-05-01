@@ -166,6 +166,8 @@ Example `get_creative_context` output:
 }
 ```
 
+In this version, `selected_clip` uses the cached selected track and selected scene as the clip-slot address when no dedicated selected-clip API is exposed.
+
 Example `analyze_clip_context` output when the active controller exposes clip metadata and MIDI notes:
 
 ```json
@@ -195,7 +197,7 @@ Known v1 limitations:
 - `get_creative_context` is a context snapshot, not an audio listener.
 - `analyze_clip_context` only summarizes accessible MIDI clip data. If the current controller cannot expose clip metadata or notes, those fields are returned as missing.
 - Some live Ableton fields may be reported as missing if the current controller does not expose them.
-- Audio, key, energy, and section analysis are intentionally out of scope for milestone 1.
+- Audio, key, energy, and section analysis are intentionally out of scope for the current context milestones.
 
 ### Start WSL Terminal Chat (OpenClaw, No API Keys)
 

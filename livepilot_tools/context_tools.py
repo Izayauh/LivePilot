@@ -420,6 +420,7 @@ def _build_selected_clip_context(
     limitations: List[str],
 ) -> Dict[str, Any]:
     track_index = selected.get("track_index")
+    # Treat cached selected_scene as the clip slot until a selected-clip API exists.
     clip_index = selected.get("scene_index")
     if track_index is None or clip_index is None:
         missing = []
