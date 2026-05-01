@@ -8,7 +8,9 @@ from livepilot_tools.context_tools import (
     analyze_clip_context,
     get_creative_context,
     get_project_intent,
+    plan_arrangement_move,
     set_project_intent,
+    validate_arrangement_plan,
 )
 
 
@@ -158,6 +160,93 @@ class CreativeContextTests(unittest.TestCase):
         self.assertEqual(context["selected_clip"]["clip_index"], 1)
         self.assertEqual(context["selected_clip"]["note_count"], 3)
         self.assertEqual(context["selected_clip"]["pitch_range"], 7)
+
+    def test_plan_arrangement_move_returns_valid_reviewable_schema(self):
+        manager = SessionManager()
+        manager.project_name = "Hook Sketch"
+        manager.detected_genre = "rnb"
+        manager.mixing_stage = "arrangement"
+        manager.state.selected_track = 0
+        manager.state.selected_scene = 1
+        manager.update_track(0, name="Piano", has_clips=True)
+
+        with TemporaryDirectory() as tmpdir:
+            intent_path = Path(tmpdir) / "project_intent.json"
+            set_project_intent(
+                {
+                    "genre": "rnb",
+                    "mood": "lifted",
+                    "arrangement_goal": "make hook lift without adding busy drums",
+                    "avoid": ["busy drums"],
+                },
+                storage_path=intent_path,
+            )
+
+            plan = plan_arrangement_move(
+                "make the hook lift without adding busy drums",
+                target_section="hook",
+                controller=FakeMidiClipController(),
+                session_manager=manager,
+                librarian_context=LibrarianSessionContext(),
+                project_intent_path=intent_path,
+            )
+
+        self.assertTrue(plan["success"])
+        self.assertTrue(plan["validation"]["valid"])
+        self.assertEqual(plan["schema_version"], "arrangement-plan-v1")
+        self.assertEqual(plan["target_section"], "hook")
+        self.assertEqual(plan["context_summary"]["selected_clip"]["note_count"], 3)
+        self.assertIn("Planning only; do not execute Ableton changes.", plan["constraints"])
+        self.assertTrue(plan["requires_human_review"])
+        move_types = {move["type"] for move in plan["moves"]}
+        self.assertIn("midi_clip", move_types)
+        self.assertIn("automation", move_types)
+
+    def test_plan_arrangement_move_reports_missing_selected_clip_midi_data(self):
+        manager = SessionManager()
+        manager.state.selected_track = 0
+        manager.state.selected_scene = 0
+
+        plan = plan_arrangement_move(
+            "extend the intro by four bars",
+            target_section="intro",
+            controller=FakeController(),
+            session_manager=manager,
+            librarian_context=LibrarianSessionContext(),
+            project_intent_path=Path("missing-test-intent.json"),
+        )
+
+        self.assertTrue(plan["success"])
+        self.assertTrue(plan["requires_human_review"])
+        self.assertTrue(any("Selected clip is missing MIDI data fields" in warning for warning in plan["warnings"]))
+        self.assertIn("note_count", plan["context_summary"]["selected_clip"]["missing_fields"])
+
+    def test_validate_arrangement_plan_rejects_invalid_move_type(self):
+        plan = {
+            "schema_version": "arrangement-plan-v1",
+            "goal": "make a safe plan",
+            "target_section": None,
+            "context_summary": {},
+            "assumptions": [],
+            "constraints": [],
+            "moves": [
+                {
+                    "type": "audio_analysis",
+                    "description": "not allowed",
+                    "target": {},
+                    "parameters": {},
+                    "reason": "not allowed",
+                    "status": "proposed",
+                }
+            ],
+            "warnings": [],
+            "requires_human_review": True,
+        }
+
+        result = validate_arrangement_plan(plan)
+
+        self.assertFalse(result["valid"])
+        self.assertTrue(any("moves[0].type" in error for error in result["errors"]))
 
     def test_creative_context_reports_missing_live_fields_without_controller(self):
         manager = SessionManager()
