@@ -34,6 +34,7 @@ try:
     from ableton_controls import ableton  # module-level singleton (one listener on 11001)
     from ableton_controls.reliable_params import ReliableParameterController
     from livepilot_tools.context_tools import (
+        analyze_clip_context as _analyze_clip_context,
         get_creative_context as _get_creative_context,
         get_project_intent as _get_project_intent,
         set_project_intent as _set_project_intent,
@@ -87,6 +88,10 @@ except Exception as _import_exc:  # pragma: no cover - exercised in lightweight 
     def _get_creative_context(**kwargs):  # type: ignore[no-redef]
         from livepilot_tools.context_tools import get_creative_context
         return get_creative_context(**kwargs)
+
+    def _analyze_clip_context(**kwargs):  # type: ignore[no-redef]
+        from livepilot_tools.context_tools import analyze_clip_context
+        return analyze_clip_context(**kwargs)
 
     def _get_project_intent(**kwargs):  # type: ignore[no-redef]
         from livepilot_tools.context_tools import get_project_intent
@@ -365,6 +370,7 @@ def _describe_functions():
         "refresh_plugin_list": {"args": {}, "description": "Refresh plugin list from Ableton"},
         "diag_osc":            {"args": {"timeout": {"type": "float", "required": False, "description": "Timeout in seconds (default 3.0)"}}, "description": "Run OSC connectivity diagnostic"},
         "get_creative_context": {"args": {}, "description": "Get structured creative context for the current LivePilot session"},
+        "analyze_clip_context": {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}}, "description": "Summarize MIDI notes in a clip where the controller exposes them"},
         "set_project_intent":  {"args": {"intent": {"type": "dict", "required": False, "description": "Project intent object; direct JSON args are also accepted"}}, "description": "Persist project intent for creative context"},
         "get_project_intent":  {"args": {}, "description": "Get persisted project intent"},
         "describe_functions":  {"args": {}, "description": "List all functions with argument schemas"},
@@ -478,6 +484,12 @@ def _build_dispatch(args: dict):
 
         # -- Creative context --
         "get_creative_context": lambda: _get_creative_context(controller=ableton, reliable=reliable_params),
+        "analyze_clip_context": lambda: _analyze_clip_context(
+            track_index=track_index,
+            clip_index=_to_int(args.get("clip_index")),
+            controller=ableton,
+            reliable=reliable_params,
+        ),
         "set_project_intent": lambda: _set_project_intent(args.get("intent", args)),
         "get_project_intent": lambda: _get_project_intent(),
 
@@ -502,6 +514,7 @@ TRACK_OPERATIONS = {
     "get_track_mute", "get_track_solo", "get_track_arm",
     "get_track_volume", "get_track_pan", "get_track_send",
     "get_track_status",
+    "analyze_clip_context",
 }
 
 

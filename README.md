@@ -135,6 +135,7 @@ Type `/health` in the chat input to test relay connectivity.
 > ./venv/Scripts/python.exe ableton_bridge.py --list              # list all functions
 > ./venv/Scripts/python.exe ableton_bridge.py get_track_list '{}'  # query Ableton
 > ./venv/Scripts/python.exe ableton_bridge.py get_creative_context '{}' # structured creative context
+> ./venv/Scripts/python.exe ableton_bridge.py analyze_clip_context '{"track_index":0,"clip_index":0}' # MIDI clip summary where available
 > ./venv/Scripts/python.exe ableton_bridge.py set_project_intent '{"genre":"rnb","mood":"intimate","references":["Trust Me - The Fray"],"arrangement_goal":"preserve groove while improving emotional lift","avoid":["fake listening claims"]}'
 > ./venv/Scripts/python.exe ableton_bridge.py get_project_intent '{}'
 > ```
@@ -147,6 +148,7 @@ Example `get_creative_context` output:
   "loop": {"enabled": false, "start_beats": 0.0, "length_beats": 4.0},
   "tracks": {"count": 1, "items": [{"index": 0, "number": 1, "name": "Piano"}]},
   "selected": {"track_index": 0, "scene_index": 0},
+  "selected_clip": {"track_index": 0, "clip_index": 0, "note_count": 12, "pitch_range": 19},
   "active_librarian": {"song": "Trust Me", "section": "verse", "chain": []},
   "project_intent": {
     "genre": "rnb",
@@ -164,9 +166,34 @@ Example `get_creative_context` output:
 }
 ```
 
+Example `analyze_clip_context` output when the active controller exposes clip metadata and MIDI notes:
+
+```json
+{
+  "success": true,
+  "track_index": 0,
+  "clip_index": 0,
+  "clip_name": "Verse Piano",
+  "clip_length_beats": 8.0,
+  "note_count": 24,
+  "pitch_min": 48,
+  "pitch_max": 72,
+  "pitch_range": 24,
+  "velocity_min": 64.0,
+  "velocity_max": 112.0,
+  "average_velocity": 88.5,
+  "note_start_min": 0.0,
+  "note_end_max": 7.75,
+  "density_notes_per_beat": 3.0,
+  "limitations": [],
+  "missing_fields": []
+}
+```
+
 Known v1 limitations:
 
 - `get_creative_context` is a context snapshot, not an audio listener.
+- `analyze_clip_context` only summarizes accessible MIDI clip data. If the current controller cannot expose clip metadata or notes, those fields are returned as missing.
 - Some live Ableton fields may be reported as missing if the current controller does not expose them.
 - Audio, key, energy, and section analysis are intentionally out of scope for milestone 1.
 

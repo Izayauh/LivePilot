@@ -4,7 +4,12 @@ from pathlib import Path
 
 from context.session_manager import SessionManager
 from librarian.session_context import LibrarianSessionContext
-from livepilot_tools.context_tools import get_creative_context, get_project_intent, set_project_intent
+from livepilot_tools.context_tools import (
+    analyze_clip_context,
+    get_creative_context,
+    get_project_intent,
+    set_project_intent,
+)
 
 
 class FakeController:
@@ -22,6 +27,27 @@ class FakeController:
 
     def get_num_scenes(self):
         return {"success": True, "num_scenes": 8}
+
+
+class FakeMidiClipController(FakeController):
+    def get_clip_info(self, track_index, clip_index):
+        return {
+            "success": True,
+            "clip": {
+                "name": f"Clip {track_index}:{clip_index}",
+                "length_beats": 4.0,
+            },
+        }
+
+    def get_clip_notes(self, track_index, clip_index):
+        return {
+            "success": True,
+            "notes": [
+                {"pitch": 60, "start": 0.0, "duration": 1.0, "velocity": 80},
+                {"pitch": 64, "start": 1.0, "duration": 0.5, "velocity": 100},
+                {"pitch": 67, "start": 2.5, "duration": 1.5, "velocity": 90},
+            ],
+        }
 
 
 class CreativeContextTests(unittest.TestCase):
@@ -74,6 +100,64 @@ class CreativeContextTests(unittest.TestCase):
         self.assertEqual(context["active_librarian"]["chain"][0]["name"], "EQ Eight")
         self.assertEqual(context["recent_actions"][0]["action"], "set_tempo")
         self.assertEqual(context["project"]["num_scenes"], 8)
+
+    def test_analyze_clip_context_summarizes_accessible_midi_notes(self):
+        result = analyze_clip_context(
+            track_index=0,
+            clip_index=1,
+            controller=FakeMidiClipController(),
+        )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["track_index"], 0)
+        self.assertEqual(result["clip_index"], 1)
+        self.assertEqual(result["clip_name"], "Clip 0:1")
+        self.assertEqual(result["clip_length_beats"], 4.0)
+        self.assertEqual(result["note_count"], 3)
+        self.assertEqual(result["pitch_min"], 60)
+        self.assertEqual(result["pitch_max"], 67)
+        self.assertEqual(result["pitch_range"], 7)
+        self.assertEqual(result["velocity_min"], 80.0)
+        self.assertEqual(result["velocity_max"], 100.0)
+        self.assertEqual(result["average_velocity"], 90.0)
+        self.assertEqual(result["note_start_min"], 0.0)
+        self.assertEqual(result["note_end_max"], 4.0)
+        self.assertEqual(result["density_notes_per_beat"], 0.75)
+        self.assertEqual(result["missing_fields"], [])
+        self.assertEqual(result["limitations"], [])
+
+    def test_analyze_clip_context_reports_missing_controller_fields(self):
+        result = analyze_clip_context(
+            track_index=0,
+            clip_index=0,
+            controller=FakeController(),
+        )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["track_index"], 0)
+        self.assertEqual(result["clip_index"], 0)
+        self.assertIsNone(result["note_count"])
+        self.assertIn("clip_name", result["missing_fields"])
+        self.assertIn("note_count", result["missing_fields"])
+        self.assertIn("density_notes_per_beat", result["missing_fields"])
+        self.assertIn("Current controller exposes no MIDI note reader for clips.", result["limitations"])
+
+    def test_creative_context_includes_selected_clip_context(self):
+        manager = SessionManager()
+        manager.state.selected_track = 0
+        manager.state.selected_scene = 1
+
+        context = get_creative_context(
+            controller=FakeMidiClipController(),
+            session_manager=manager,
+            librarian_context=LibrarianSessionContext(),
+            project_intent_path=Path("missing-test-intent.json"),
+        )
+
+        self.assertEqual(context["selected_clip"]["track_index"], 0)
+        self.assertEqual(context["selected_clip"]["clip_index"], 1)
+        self.assertEqual(context["selected_clip"]["note_count"], 3)
+        self.assertEqual(context["selected_clip"]["pitch_range"], 7)
 
     def test_creative_context_reports_missing_live_fields_without_controller(self):
         manager = SessionManager()
