@@ -134,7 +134,29 @@ Type `/health` in the chat input to test relay connectivity.
 > ```bash
 > ./venv/Scripts/python.exe ableton_bridge.py --list              # list all functions
 > ./venv/Scripts/python.exe ableton_bridge.py get_track_list '{}'  # query Ableton
+> ./venv/Scripts/python.exe ableton_bridge.py get_creative_context '{}' # structured creative context
 > ```
+
+Example `get_creative_context` output:
+
+```json
+{
+  "transport": {"playing": false, "recording": false, "tempo": 92.0, "position_beats": 0.0},
+  "loop": {"enabled": false, "start_beats": 0.0, "length_beats": 4.0},
+  "tracks": {"count": 1, "items": [{"index": 0, "number": 1, "name": "Piano"}]},
+  "selected": {"track_index": 0, "scene_index": 0},
+  "active_librarian": {"song": "Trust Me", "section": "verse", "chain": []},
+  "recent_actions": [],
+  "project": {"name": "Trust Me Sketch", "genre": "rnb", "stage": "arrangement"},
+  "known_limitations": {"limitations": [], "missing_fields": []}
+}
+```
+
+Known v1 limitations:
+
+- `get_creative_context` is a context snapshot, not an audio listener.
+- Some live Ableton fields may be reported as missing if the current controller does not expose them.
+- Audio, key, energy, and section analysis are intentionally out of scope for milestone 1.
 
 ### Start WSL Terminal Chat (OpenClaw, No API Keys)
 
