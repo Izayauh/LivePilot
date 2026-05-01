@@ -136,6 +136,7 @@ Type `/health` in the chat input to test relay connectivity.
 > ./venv/Scripts/python.exe ableton_bridge.py get_track_list '{}'  # query Ableton
 > ./venv/Scripts/python.exe ableton_bridge.py get_creative_context '{}' # structured creative context
 > ./venv/Scripts/python.exe ableton_bridge.py analyze_clip_context '{"track_index":0,"clip_index":0}' # MIDI clip summary where available
+> ./venv/Scripts/python.exe ableton_bridge.py plan_arrangement_move '{"goal":"make the hook lift without adding busy drums","target_section":"hook"}' # reviewable plan only
 > ./venv/Scripts/python.exe ableton_bridge.py set_project_intent '{"genre":"rnb","mood":"intimate","references":["Trust Me - The Fray"],"arrangement_goal":"preserve groove while improving emotional lift","avoid":["fake listening claims"]}'
 > ./venv/Scripts/python.exe ableton_bridge.py get_project_intent '{}'
 > ```
@@ -192,10 +193,52 @@ Example `analyze_clip_context` output when the active controller exposes clip me
 }
 ```
 
+Example `plan_arrangement_move` output:
+
+```json
+{
+  "success": true,
+  "schema_version": "arrangement-plan-v1",
+  "goal": "make the hook lift without adding busy drums",
+  "target_section": "hook",
+  "context_summary": {
+    "tempo": 92.0,
+    "selected_track_index": 0,
+    "selected_scene_index": 0,
+    "selected_clip": {"track_index": 0, "clip_index": 0, "note_count": 12, "missing_fields": []}
+  },
+  "assumptions": ["This plan is a proposal only; no Ableton changes have been executed."],
+  "constraints": ["Planning only; do not execute Ableton changes."],
+  "moves": [
+    {
+      "type": "scene_or_arrangement_marker",
+      "description": "Review or label the target section boundary before making arrangement edits.",
+      "target": {"section": "hook"},
+      "parameters": {"label": "hook", "planning_only": true},
+      "reason": "Arrangement moves are safer when the intended section is explicit.",
+      "status": "proposed"
+    },
+    {
+      "type": "arrangement_edit",
+      "description": "Draft a section-level edit that supports the stated goal without changing project data yet.",
+      "target": {"section": "hook"},
+      "parameters": {"goal": "make the hook lift without adding busy drums", "planning_only": true},
+      "reason": "The request is about arrangement direction, so this remains a reviewable placeholder.",
+      "status": "proposed"
+    }
+  ],
+  "warnings": ["Goal appears to require listening judgment; human review is required."],
+  "requires_human_review": true
+}
+```
+
+`plan_arrangement_move` does not execute changes. It returns a schema-validated proposal and flags missing context or listening-dependent goals for human review.
+
 Known v1 limitations:
 
 - `get_creative_context` is a context snapshot, not an audio listener.
 - `analyze_clip_context` only summarizes accessible MIDI clip data. If the current controller cannot expose clip metadata or notes, those fields are returned as missing.
+- `plan_arrangement_move` is planning only and never writes arrangement, MIDI, device, or automation changes.
 - Some live Ableton fields may be reported as missing if the current controller does not expose them.
 - Audio, key, energy, and section analysis are intentionally out of scope for the current context milestones.
 

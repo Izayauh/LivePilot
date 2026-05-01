@@ -27,6 +27,38 @@ PROJECT_INTENT_FIELDS = (
     "avoid",
     "notes",
 )
+ARRANGEMENT_PLAN_SCHEMA_VERSION = "arrangement-plan-v1"
+ARRANGEMENT_MOVE_TYPES = (
+    "midi_clip",
+    "automation",
+    "device_change",
+    "scene_or_arrangement_marker",
+    "arrangement_edit",
+)
+
+ARRANGEMENT_PLAN_SCHEMA = {
+    "schema_version": ARRANGEMENT_PLAN_SCHEMA_VERSION,
+    "required_fields": [
+        "schema_version",
+        "goal",
+        "target_section",
+        "context_summary",
+        "assumptions",
+        "constraints",
+        "moves",
+        "warnings",
+        "requires_human_review",
+    ],
+    "move_types": list(ARRANGEMENT_MOVE_TYPES),
+    "move_required_fields": [
+        "type",
+        "description",
+        "target",
+        "parameters",
+        "reason",
+        "status",
+    ],
+}
 
 
 def set_project_intent(
@@ -281,6 +313,303 @@ def analyze_clip_context(
     summary["missing_fields"] = sorted(set(missing_fields))
     summary["limitations"] = sorted(set(limitations))
     return _json_safe(summary)
+
+
+def plan_arrangement_move(
+    goal: str,
+    target_section: Optional[str] = None,
+    controller: Any = None,
+    reliable: Any = None,
+    session_manager: Any = None,
+    librarian_context: Any = None,
+    project_intent_path: Any = None,
+) -> Dict[str, Any]:
+    """Build a reviewable arrangement plan without executing Ableton changes."""
+    if not isinstance(goal, str) or not goal.strip():
+        plan = _empty_arrangement_plan(goal=goal, target_section=target_section)
+        plan["warnings"].append("Goal must be a non-empty string.")
+        plan["requires_human_review"] = True
+        return _finalize_arrangement_plan(plan)
+
+    context = get_creative_context(
+        controller=controller,
+        reliable=reliable,
+        session_manager=session_manager,
+        librarian_context=librarian_context,
+        project_intent_path=project_intent_path,
+    )
+    context_summary = _arrangement_context_summary(context)
+    plan = {
+        "schema_version": ARRANGEMENT_PLAN_SCHEMA_VERSION,
+        "goal": goal.strip(),
+        "target_section": target_section,
+        "context_summary": context_summary,
+        "assumptions": _arrangement_assumptions(context, target_section),
+        "constraints": _arrangement_constraints(),
+        "moves": _arrangement_moves(goal.strip(), target_section, context_summary),
+        "warnings": _arrangement_warnings(goal.strip(), context),
+        "requires_human_review": _goal_requires_human_review(goal) or _context_requires_human_review(context),
+    }
+    return _finalize_arrangement_plan(plan)
+
+
+def validate_arrangement_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
+    """Validate the local arrangement plan schema shape."""
+    errors: List[str] = []
+    if not isinstance(plan, dict):
+        return {"success": False, "valid": False, "errors": ["plan must be a dict"]}
+
+    for field in ARRANGEMENT_PLAN_SCHEMA["required_fields"]:
+        if field not in plan:
+            errors.append(f"missing required field: {field}")
+
+    if plan.get("schema_version") != ARRANGEMENT_PLAN_SCHEMA_VERSION:
+        errors.append(f"schema_version must be {ARRANGEMENT_PLAN_SCHEMA_VERSION}")
+
+    if not isinstance(plan.get("goal"), str) or not plan.get("goal", "").strip():
+        errors.append("goal must be a non-empty string")
+
+    if plan.get("target_section") is not None and not isinstance(plan.get("target_section"), str):
+        errors.append("target_section must be a string or null")
+
+    for field in ("context_summary",):
+        if field in plan and not isinstance(plan.get(field), dict):
+            errors.append(f"{field} must be a dict")
+
+    for field in ("assumptions", "constraints", "warnings"):
+        if field in plan and not isinstance(plan.get(field), list):
+            errors.append(f"{field} must be a list")
+
+    if "requires_human_review" in plan and not isinstance(plan.get("requires_human_review"), bool):
+        errors.append("requires_human_review must be a bool")
+
+    moves = plan.get("moves")
+    if not isinstance(moves, list):
+        errors.append("moves must be a list")
+    else:
+        for index, move in enumerate(moves):
+            if not isinstance(move, dict):
+                errors.append(f"moves[{index}] must be a dict")
+                continue
+            for field in ARRANGEMENT_PLAN_SCHEMA["move_required_fields"]:
+                if field not in move:
+                    errors.append(f"moves[{index}] missing required field: {field}")
+            if move.get("type") not in ARRANGEMENT_MOVE_TYPES:
+                errors.append(f"moves[{index}].type must be one of {list(ARRANGEMENT_MOVE_TYPES)}")
+            if "parameters" in move and not isinstance(move.get("parameters"), dict):
+                errors.append(f"moves[{index}].parameters must be a dict")
+
+    return {"success": not errors, "valid": not errors, "errors": errors, "schema": ARRANGEMENT_PLAN_SCHEMA}
+
+
+def _empty_arrangement_plan(goal: Any, target_section: Optional[str]) -> Dict[str, Any]:
+    return {
+        "schema_version": ARRANGEMENT_PLAN_SCHEMA_VERSION,
+        "goal": goal if isinstance(goal, str) else "",
+        "target_section": target_section,
+        "context_summary": {},
+        "assumptions": [],
+        "constraints": _arrangement_constraints(),
+        "moves": [],
+        "warnings": [],
+        "requires_human_review": True,
+    }
+
+
+def _finalize_arrangement_plan(plan: Dict[str, Any]) -> Dict[str, Any]:
+    validation = validate_arrangement_plan(plan)
+    plan["validation"] = {
+        "valid": validation["valid"],
+        "errors": validation["errors"],
+    }
+    plan["schema"] = ARRANGEMENT_PLAN_SCHEMA
+    plan["success"] = validation["valid"]
+    return _json_safe(plan)
+
+
+def _arrangement_context_summary(context: Dict[str, Any]) -> Dict[str, Any]:
+    transport = context.get("transport") or {}
+    tracks = context.get("tracks") or {}
+    selected = context.get("selected") or {}
+    selected_clip = context.get("selected_clip") or {}
+    project_intent = context.get("project_intent") or {}
+    active_librarian = context.get("active_librarian") or {}
+    project = context.get("project") or {}
+
+    return {
+        "tempo": transport.get("tempo"),
+        "playing": transport.get("playing"),
+        "track_count": tracks.get("count"),
+        "selected_track_index": selected.get("track_index"),
+        "selected_track_name": (selected.get("track") or {}).get("name") if isinstance(selected.get("track"), dict) else None,
+        "selected_scene_index": selected.get("scene_index"),
+        "selected_clip": {
+            "track_index": selected_clip.get("track_index"),
+            "clip_index": selected_clip.get("clip_index"),
+            "clip_name": selected_clip.get("clip_name"),
+            "clip_length_beats": selected_clip.get("clip_length_beats"),
+            "note_count": selected_clip.get("note_count"),
+            "pitch_range": selected_clip.get("pitch_range"),
+            "missing_fields": selected_clip.get("missing_fields", []),
+        },
+        "project": {
+            "name": project.get("name"),
+            "genre": project.get("genre"),
+            "stage": project.get("stage"),
+            "num_scenes": project.get("num_scenes"),
+        },
+        "project_intent": {
+            "genre": project_intent.get("genre"),
+            "mood": project_intent.get("mood"),
+            "arrangement_goal": project_intent.get("arrangement_goal"),
+            "prefer": project_intent.get("prefer", []),
+            "avoid": project_intent.get("avoid", []),
+        },
+        "active_section": active_librarian.get("section"),
+    }
+
+
+def _arrangement_assumptions(context: Dict[str, Any], target_section: Optional[str]) -> List[str]:
+    assumptions = [
+        "This plan is a proposal only; no Ableton changes have been executed.",
+    ]
+    if target_section:
+        assumptions.append(f"Target section is interpreted as '{target_section}'.")
+    elif (context.get("active_librarian") or {}).get("section"):
+        assumptions.append("No target_section was provided; active librarian section is used as contextual reference only.")
+    else:
+        assumptions.append("No target_section was provided, so moves are section-agnostic placeholders.")
+
+    selected = context.get("selected") or {}
+    if selected.get("scene_index") is not None:
+        assumptions.append("Cached selected_scene is treated as the selected clip slot index until a dedicated selected-clip API exists.")
+
+    return assumptions
+
+
+def _arrangement_constraints() -> List[str]:
+    return [
+        "Planning only; do not execute Ableton changes.",
+        "Do not add audio listening or audio-derived judgments.",
+        "Do not infer key, chords, or energy.",
+        "Do not call Lyria, Suno, or external generation services.",
+        "Human review is required before any proposed move is executed.",
+    ]
+
+
+def _arrangement_moves(goal: str, target_section: Optional[str], context_summary: Dict[str, Any]) -> List[Dict[str, Any]]:
+    section_target = target_section or context_summary.get("active_section")
+    selected_clip = context_summary.get("selected_clip") or {}
+    moves = [
+        {
+            "type": "scene_or_arrangement_marker",
+            "description": "Review or label the target section boundary before making arrangement edits.",
+            "target": {"section": section_target},
+            "parameters": {"label": section_target, "planning_only": True},
+            "reason": "Arrangement moves are safer when the intended section is explicit.",
+            "status": "proposed",
+        },
+        {
+            "type": "arrangement_edit",
+            "description": "Draft a section-level edit that supports the stated goal without changing project data yet.",
+            "target": {"section": section_target},
+            "parameters": {"goal": goal, "planning_only": True},
+            "reason": "The request is about arrangement direction, so this remains a reviewable placeholder.",
+            "status": "proposed",
+        },
+    ]
+
+    if selected_clip.get("track_index") is not None and selected_clip.get("clip_index") is not None:
+        moves.append(
+            {
+                "type": "midi_clip",
+                "description": "Consider a MIDI clip variation for the selected clip slot after human review.",
+                "target": {
+                    "track_index": selected_clip.get("track_index"),
+                    "clip_index": selected_clip.get("clip_index"),
+                    "clip_name": selected_clip.get("clip_name"),
+                },
+                "parameters": {
+                    "source_note_count": selected_clip.get("note_count"),
+                    "source_pitch_range": selected_clip.get("pitch_range"),
+                    "planning_only": True,
+                },
+                "reason": "Selected clip context is available as a possible MIDI planning target.",
+                "status": "proposed",
+            }
+        )
+
+    lower_goal = goal.lower()
+    if any(word in lower_goal for word in ("automation", "lift", "build", "rise", "transition")):
+        moves.append(
+            {
+                "type": "automation",
+                "description": "Plan a non-destructive automation idea for review, without writing automation.",
+                "target": {"section": section_target},
+                "parameters": {"automation_lane": None, "curve": None, "planning_only": True},
+                "reason": "The goal suggests movement over time, but exact automation must be reviewed in Ableton.",
+                "status": "proposed",
+            }
+        )
+
+    if any(word in lower_goal for word in ("device", "effect", "filter", "reverb", "delay", "texture")):
+        moves.append(
+            {
+                "type": "device_change",
+                "description": "Plan a device or parameter change candidate for review, without loading or changing devices.",
+                "target": {"section": section_target, "track_index": selected_clip.get("track_index")},
+                "parameters": {"device": None, "parameter": None, "value": None, "planning_only": True},
+                "reason": "The goal mentions a sonic/device direction, but this planner cannot audition audio.",
+                "status": "proposed",
+            }
+        )
+
+    return moves
+
+
+def _arrangement_warnings(goal: str, context: Dict[str, Any]) -> List[str]:
+    warnings: List[str] = []
+    known_limitations = context.get("known_limitations") or {}
+    for field in known_limitations.get("missing_fields", []):
+        warnings.append(f"Context missing field: {field}")
+    for limitation in known_limitations.get("limitations", []):
+        warnings.append(f"Context limitation: {limitation}")
+
+    selected_clip = context.get("selected_clip") or {}
+    selected_missing = selected_clip.get("missing_fields") or []
+    if selected_missing:
+        warnings.append(f"Selected clip is missing MIDI data fields: {', '.join(selected_missing)}")
+
+    if _goal_requires_human_review(goal):
+        warnings.append("Goal appears to require listening judgment; human review is required.")
+
+    if not warnings:
+        warnings.append("No execution has occurred; review the plan before applying any move.")
+    return sorted(set(warnings))
+
+
+def _goal_requires_human_review(goal: str) -> bool:
+    listening_terms = (
+        "listen",
+        "sounds",
+        "feel",
+        "feels",
+        "energy",
+        "vibe",
+        "groove",
+        "key",
+        "chord",
+        "emotion",
+        "better",
+        "lift",
+    )
+    lower_goal = goal.lower()
+    return any(term in lower_goal for term in listening_terms)
+
+
+def _context_requires_human_review(context: Dict[str, Any]) -> bool:
+    selected_clip = context.get("selected_clip") or {}
+    return bool(selected_clip.get("missing_fields") or (context.get("known_limitations") or {}).get("missing_fields"))
 
 
 def _project_intent_path(storage_path: Any = None) -> Path:

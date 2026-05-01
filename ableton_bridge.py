@@ -37,6 +37,7 @@ try:
         analyze_clip_context as _analyze_clip_context,
         get_creative_context as _get_creative_context,
         get_project_intent as _get_project_intent,
+        plan_arrangement_move as _plan_arrangement_move,
         set_project_intent as _set_project_intent,
     )
     _ABLETON_IMPORT_ERROR = None
@@ -96,6 +97,10 @@ except Exception as _import_exc:  # pragma: no cover - exercised in lightweight 
     def _get_project_intent(**kwargs):  # type: ignore[no-redef]
         from livepilot_tools.context_tools import get_project_intent
         return get_project_intent(**kwargs)
+
+    def _plan_arrangement_move(**kwargs):  # type: ignore[no-redef]
+        from livepilot_tools.context_tools import plan_arrangement_move
+        return plan_arrangement_move(**kwargs)
 
     def _set_project_intent(intent, **kwargs):  # type: ignore[no-redef]
         from livepilot_tools.context_tools import set_project_intent
@@ -371,6 +376,7 @@ def _describe_functions():
         "diag_osc":            {"args": {"timeout": {"type": "float", "required": False, "description": "Timeout in seconds (default 3.0)"}}, "description": "Run OSC connectivity diagnostic"},
         "get_creative_context": {"args": {}, "description": "Get structured creative context for the current LivePilot session"},
         "analyze_clip_context": {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}}, "description": "Summarize MIDI notes in a clip where the controller exposes them"},
+        "plan_arrangement_move": {"args": {"goal": {"type": "str", "required": True}, "target_section": {"type": "str|null", "required": False}}, "description": "Create a reviewable arrangement move plan without executing Ableton changes"},
         "set_project_intent":  {"args": {"intent": {"type": "dict", "required": False, "description": "Project intent object; direct JSON args are also accepted"}}, "description": "Persist project intent for creative context"},
         "get_project_intent":  {"args": {}, "description": "Get persisted project intent"},
         "describe_functions":  {"args": {}, "description": "List all functions with argument schemas"},
@@ -487,6 +493,12 @@ def _build_dispatch(args: dict):
         "analyze_clip_context": lambda: _analyze_clip_context(
             track_index=track_index,
             clip_index=_to_int(args.get("clip_index")),
+            controller=ableton,
+            reliable=reliable_params,
+        ),
+        "plan_arrangement_move": lambda: _plan_arrangement_move(
+            goal=args.get("goal"),
+            target_section=args.get("target_section"),
             controller=ableton,
             reliable=reliable_params,
         ),
