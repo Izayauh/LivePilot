@@ -33,6 +33,7 @@ if _REPO_ROOT not in sys.path:
 try:
     from ableton_controls import ableton  # module-level singleton (one listener on 11001)
     from ableton_controls.reliable_params import ReliableParameterController
+    from livepilot_tools.context_tools import get_creative_context as _get_creative_context
     _ABLETON_IMPORT_ERROR = None
 except Exception as _import_exc:  # pragma: no cover - exercised in lightweight test envs
     _ABLETON_IMPORT_ERROR = str(_import_exc)
@@ -78,6 +79,10 @@ except Exception as _import_exc:  # pragma: no cover - exercised in lightweight 
             }
 
     ableton = _FallbackAbleton()
+
+    def _get_creative_context(**kwargs):  # type: ignore[no-redef]
+        from livepilot_tools.context_tools import get_creative_context
+        return get_creative_context(**kwargs)
 
 # ---------------------------------------------------------------------------
 # Singleton controller instance — reuse the one from ableton_controls to avoid
@@ -347,6 +352,7 @@ def _describe_functions():
         "find_plugin":         {"args": {"query": {"type": "str", "required": True}, "category": {"type": "str", "required": False}}, "description": "Find plugin by name"},
         "refresh_plugin_list": {"args": {}, "description": "Refresh plugin list from Ableton"},
         "diag_osc":            {"args": {"timeout": {"type": "float", "required": False, "description": "Timeout in seconds (default 3.0)"}}, "description": "Run OSC connectivity diagnostic"},
+        "get_creative_context": {"args": {}, "description": "Get structured creative context for the current LivePilot session"},
         "describe_functions":  {"args": {}, "description": "List all functions with argument schemas"},
     }
     return {"success": True, "functions": descriptions, "count": len(descriptions)}
@@ -455,6 +461,9 @@ def _build_dispatch(args: dict):
 
         # -- Diagnostics --
         "diag_osc":            lambda: ableton.diag_osc(float(args.get("timeout", 3.0))),
+
+        # -- Creative context --
+        "get_creative_context": lambda: _get_creative_context(controller=ableton, reliable=reliable_params),
 
         # -- Introspection --
         "describe_functions":  lambda: _describe_functions(),
