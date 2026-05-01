@@ -7,12 +7,94 @@ can request before planning Ableton changes.
 
 from __future__ import annotations
 
+import json
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 from context.session_manager import session_manager as default_session_manager
 from librarian.session_context import get_librarian_session_context
+
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_PROJECT_INTENT_PATH = _REPO_ROOT / "data" / "project_intent.json"
+PROJECT_INTENT_FIELDS = (
+    "genre",
+    "references",
+    "mood",
+    "arrangement_goal",
+    "prefer",
+    "avoid",
+    "notes",
+)
+
+
+def set_project_intent(
+    intent: Dict[str, Any],
+    storage_path: Any = None,
+) -> Dict[str, Any]:
+    """Persist project intent as deterministic local JSON."""
+    if not isinstance(intent, dict):
+        return {"success": False, "message": "intent must be a dict"}
+
+    normalized = _empty_project_intent()
+    normalized.update({field: _json_safe(intent.get(field, normalized[field])) for field in PROJECT_INTENT_FIELDS})
+    for key, value in intent.items():
+        if key not in normalized and key != "updated_at":
+            normalized[key] = _json_safe(value)
+    normalized["updated_at"] = datetime.now().isoformat()
+
+    try:
+        json.dumps(normalized)
+    except TypeError as exc:
+        return {"success": False, "message": f"intent must be JSON-serializable: {exc}"}
+
+    path = _project_intent_path(storage_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(normalized, indent=2, sort_keys=True), encoding="utf-8")
+
+    return {
+        "success": True,
+        "project_intent": normalized,
+        "path": str(path),
+    }
+
+
+def get_project_intent(storage_path: Any = None) -> Dict[str, Any]:
+    """Load the persisted project intent, if one has been set."""
+    path = _project_intent_path(storage_path)
+    if not path.exists():
+        return {
+            "success": True,
+            "project_intent": _empty_project_intent(),
+            "path": str(path),
+            "exists": False,
+        }
+
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return {
+            "success": False,
+            "project_intent": _empty_project_intent(),
+            "path": str(path),
+            "message": f"Failed to load project intent: {exc}",
+        }
+
+    if not isinstance(data, dict):
+        return {
+            "success": False,
+            "project_intent": _empty_project_intent(),
+            "path": str(path),
+            "message": "Stored project intent must be a JSON object",
+        }
+
+    return {
+        "success": True,
+        "project_intent": data,
+        "path": str(path),
+        "exists": True,
+    }
 
 
 def get_creative_context(
@@ -20,6 +102,7 @@ def get_creative_context(
     reliable: Any = None,
     session_manager: Any = None,
     librarian_context: Any = None,
+    project_intent_path: Any = None,
     recent_action_count: int = 10,
 ) -> Dict[str, Any]:
     """Return a JSON-serializable snapshot of the current creative session.
@@ -30,6 +113,7 @@ def get_creative_context(
         reliable: Reserved for parity with other shared LivePilot tools.
         session_manager: Optional SessionManager-like object.
         librarian_context: Optional LibrarianSessionContext-like object.
+        project_intent_path: Optional override for tests or alternate local state.
         recent_action_count: Number of recent actions to include.
     """
     _ = reliable
@@ -46,6 +130,9 @@ def get_creative_context(
     tracks = _build_tracks_summary(session_state, live_snapshot, missing_fields)
     selected = _build_selected_context(session_state, tracks, missing_fields)
     librarian_active = _build_librarian_context(librarian, missing_fields)
+    project_intent = get_project_intent(project_intent_path)
+    if not project_intent.get("exists"):
+        missing_fields.append("project_intent")
     recent_actions = _recent_actions(manager, recent_action_count)
 
     context = {
@@ -54,6 +141,7 @@ def get_creative_context(
         "tracks": tracks,
         "selected": selected,
         "active_librarian": librarian_active,
+        "project_intent": project_intent.get("project_intent", _empty_project_intent()),
         "recent_actions": recent_actions,
         "project": {
             "name": getattr(manager, "project_name", None),
@@ -73,6 +161,23 @@ def get_creative_context(
     }
 
     return _json_safe(context)
+
+
+def _project_intent_path(storage_path: Any = None) -> Path:
+    return Path(storage_path) if storage_path is not None else DEFAULT_PROJECT_INTENT_PATH
+
+
+def _empty_project_intent() -> Dict[str, Any]:
+    return {
+        "genre": None,
+        "references": [],
+        "mood": None,
+        "arrangement_goal": None,
+        "prefer": [],
+        "avoid": [],
+        "notes": None,
+        "updated_at": None,
+    }
 
 
 def _read_controller_snapshot(

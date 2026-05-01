@@ -1,8 +1,10 @@
 import unittest
+from tempfile import TemporaryDirectory
+from pathlib import Path
 
 from context.session_manager import SessionManager
 from librarian.session_context import LibrarianSessionContext
-from livepilot_tools.context_tools import get_creative_context
+from livepilot_tools.context_tools import get_creative_context, get_project_intent, set_project_intent
 
 
 class FakeController:
@@ -59,6 +61,7 @@ class CreativeContextTests(unittest.TestCase):
             controller=FakeController(),
             session_manager=manager,
             librarian_context=librarian,
+            project_intent_path=Path("missing-test-intent.json"),
         )
 
         self.assertEqual(context["transport"]["tempo"], 92.0)
@@ -79,12 +82,52 @@ class CreativeContextTests(unittest.TestCase):
         context = get_creative_context(
             session_manager=manager,
             librarian_context=LibrarianSessionContext(),
+            project_intent_path=Path("missing-test-intent.json"),
         )
 
         self.assertEqual(context["tracks"]["items"][0]["name"], "Piano")
         self.assertIn("live_tracks", context["known_limitations"]["missing_fields"])
         self.assertIn("active_librarian", context["known_limitations"]["missing_fields"])
         self.assertEqual(context["active_librarian"]["chain"], [])
+
+    def test_project_intent_persists_and_merges_into_creative_context(self):
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "project_intent.json"
+            result = set_project_intent(
+                {
+                    "genre": "rnb",
+                    "mood": "intimate",
+                    "references": ["Trust Me - The Fray"],
+                    "arrangement_goal": "preserve groove while improving emotional lift",
+                    "prefer": ["warm piano"],
+                    "avoid": ["fake listening claims", "overbusy low end"],
+                    "notes": "Keep the vocal lane open.",
+                },
+                storage_path=path,
+            )
+
+            self.assertTrue(result["success"])
+            self.assertTrue(path.exists())
+            self.assertEqual(result["project_intent"]["genre"], "rnb")
+            self.assertIsNotNone(result["project_intent"]["updated_at"])
+
+            loaded = get_project_intent(storage_path=path)
+            self.assertTrue(loaded["success"])
+            self.assertEqual(loaded["project_intent"]["mood"], "intimate")
+
+            context = get_creative_context(
+                session_manager=SessionManager(),
+                librarian_context=LibrarianSessionContext(),
+                project_intent_path=path,
+            )
+            self.assertEqual(context["project_intent"]["references"], ["Trust Me - The Fray"])
+            self.assertNotIn("project_intent", context["known_limitations"]["missing_fields"])
+
+    def test_set_project_intent_rejects_non_dict(self):
+        result = set_project_intent(["not", "a", "dict"])
+
+        self.assertFalse(result["success"])
+        self.assertIn("dict", result["message"])
 
 
 if __name__ == "__main__":
