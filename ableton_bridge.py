@@ -35,6 +35,7 @@ try:
     from ableton_controls.reliable_params import ReliableParameterController
     from livepilot_tools.context_tools import (
         analyze_clip_context as _analyze_clip_context,
+        analyze_rhythm_context as _analyze_rhythm_context,
         get_creative_context as _get_creative_context,
         get_project_intent as _get_project_intent,
         plan_arrangement_move as _plan_arrangement_move,
@@ -93,6 +94,10 @@ except Exception as _import_exc:  # pragma: no cover - exercised in lightweight 
     def _analyze_clip_context(**kwargs):  # type: ignore[no-redef]
         from livepilot_tools.context_tools import analyze_clip_context
         return analyze_clip_context(**kwargs)
+
+    def _analyze_rhythm_context(**kwargs):  # type: ignore[no-redef]
+        from livepilot_tools.context_tools import analyze_rhythm_context
+        return analyze_rhythm_context(**kwargs)
 
     def _get_project_intent(**kwargs):  # type: ignore[no-redef]
         from livepilot_tools.context_tools import get_project_intent
@@ -376,6 +381,7 @@ def _describe_functions():
         "diag_osc":            {"args": {"timeout": {"type": "float", "required": False, "description": "Timeout in seconds (default 3.0)"}}, "description": "Run OSC connectivity diagnostic"},
         "get_creative_context": {"args": {}, "description": "Get structured creative context for the current LivePilot session"},
         "analyze_clip_context": {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}}, "description": "Summarize MIDI notes in a clip where the controller exposes them"},
+        "analyze_rhythm_context": {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}, "role": {"type": "str|null", "required": False}}, "description": "Summarize MIDI-only rhythm grid alignment for a clip"},
         "plan_arrangement_move": {"args": {"goal": {"type": "str", "required": True}, "target_section": {"type": "str|null", "required": False}}, "description": "Create a reviewable arrangement move plan without executing Ableton changes"},
         "set_project_intent":  {"args": {"intent": {"type": "dict", "required": False, "description": "Project intent object; direct JSON args are also accepted"}}, "description": "Persist project intent for creative context"},
         "get_project_intent":  {"args": {}, "description": "Get persisted project intent"},
@@ -496,6 +502,13 @@ def _build_dispatch(args: dict):
             controller=ableton,
             reliable=reliable_params,
         ),
+        "analyze_rhythm_context": lambda: _analyze_rhythm_context(
+            track_index=track_index,
+            clip_index=_to_int(args.get("clip_index")),
+            role=args.get("role"),
+            controller=ableton,
+            reliable=reliable_params,
+        ),
         "plan_arrangement_move": lambda: _plan_arrangement_move(
             goal=args.get("goal"),
             target_section=args.get("target_section"),
@@ -526,7 +539,7 @@ TRACK_OPERATIONS = {
     "get_track_mute", "get_track_solo", "get_track_arm",
     "get_track_volume", "get_track_pan", "get_track_send",
     "get_track_status",
-    "analyze_clip_context",
+    "analyze_clip_context", "analyze_rhythm_context",
 }
 
 

@@ -136,6 +136,7 @@ Type `/health` in the chat input to test relay connectivity.
 > ./venv/Scripts/python.exe ableton_bridge.py get_track_list '{}'  # query Ableton
 > ./venv/Scripts/python.exe ableton_bridge.py get_creative_context '{}' # structured creative context
 > ./venv/Scripts/python.exe ableton_bridge.py analyze_clip_context '{"track_index":0,"clip_index":0}' # MIDI clip summary where available
+> ./venv/Scripts/python.exe ableton_bridge.py analyze_rhythm_context '{"track_index":2,"clip_index":0,"role":"drums"}' # MIDI-only rhythm grid alignment
 > ./venv/Scripts/python.exe ableton_bridge.py plan_arrangement_move '{"goal":"make the hook lift without adding busy drums","target_section":"hook"}' # reviewable plan only
 > ./venv/Scripts/python.exe ableton_bridge.py set_project_intent '{"genre":"rnb","mood":"intimate","references":["Trust Me - The Fray"],"arrangement_goal":"preserve groove while improving emotional lift","avoid":["fake listening claims"]}'
 > ./venv/Scripts/python.exe ableton_bridge.py get_project_intent '{}'
@@ -150,6 +151,8 @@ Example `get_creative_context` output:
   "tracks": {"count": 1, "items": [{"index": 0, "number": 1, "name": "Piano"}]},
   "selected": {"track_index": 0, "scene_index": 0},
   "selected_clip": {"track_index": 0, "clip_index": 0, "note_count": 12, "pitch_range": 19},
+  "selected_rhythm": {"track_index": 0, "clip_index": 0, "likely_resolution": "1/16", "average_grid_error": 0.0},
+  "rhythm_context": {"track_index": 0, "clip_index": 0, "likely_resolution": "1/16", "average_grid_error": 0.0},
   "active_librarian": {"song": "Trust Me", "section": "verse", "chain": []},
   "project_intent": {
     "genre": "rnb",
@@ -168,6 +171,7 @@ Example `get_creative_context` output:
 ```
 
 In this version, `selected_clip` uses the cached selected track and selected scene as the clip-slot address when no dedicated selected-clip API is exposed.
+`selected_rhythm`/`rhythm_context` use the same selected clip-slot address and only inspect accessible MIDI note timing.
 
 Example `analyze_clip_context` output when the active controller exposes clip metadata and MIDI notes:
 
@@ -190,6 +194,41 @@ Example `analyze_clip_context` output when the active controller exposes clip me
   "density_notes_per_beat": 3.0,
   "limitations": [],
   "missing_fields": []
+}
+```
+
+Example `analyze_rhythm_context` output for a sparse half-time drum clip:
+
+```json
+{
+  "success": true,
+  "track_index": 2,
+  "clip_index": 0,
+  "role": "drums",
+  "clip_length_beats": 4.0,
+  "note_count": 6,
+  "notes_by_beat": [{"beat": 0, "count": 2, "pitches": [36, 42]}],
+  "detected_grid_positions": [{"beat": 0.0, "count": 2, "likely_drum_families": ["hat", "kick"]}],
+  "off_grid_notes": [],
+  "average_grid_error": 0.0,
+  "max_grid_error": 0.0,
+  "likely_resolution": "1/4",
+  "density_by_bar": [{"bar": 1, "start_beat": 0.0, "end_beat": 4.0, "note_count": 6, "notes_per_beat": 1.5}],
+  "downbeat_hits": {"count": 2, "positions": [{"beat": 0.0, "pitch": 36, "likely_drum_family": "kick"}]},
+  "backbeat_hits": {"count": 2, "standard_backbeat_offsets": [1.0, 3.0], "half_time_candidate_count": 2},
+  "syncopation_notes": [],
+  "drum_interpretation": {
+    "confidence": "pitch/name heuristic only",
+    "family_counts": {"hat": 4, "kick": 1, "snare": 1}
+  },
+  "warnings": [
+    "MIDI note starts are tightly quantized to the detected grid; timing variance appears mechanical from note data alone."
+  ],
+  "missing_fields": [],
+  "limitations": [
+    "Assumes 4/4 bar grouping for downbeat, backbeat, and density summaries.",
+    "MIDI-only analysis; no audio listening, transient detection, swing extraction, or groove feel judgment."
+  ]
 }
 ```
 
@@ -238,6 +277,7 @@ Known v1 limitations:
 
 - `get_creative_context` is a context snapshot, not an audio listener.
 - `analyze_clip_context` only summarizes accessible MIDI clip data. If the current controller cannot expose clip metadata or notes, those fields are returned as missing.
+- `analyze_rhythm_context` uses MIDI note starts only; drum family labels are pitch/name heuristics and are not certainty claims.
 - `plan_arrangement_move` is planning only and never writes arrangement, MIDI, device, or automation changes.
 - Some live Ableton fields may be reported as missing if the current controller does not expose them.
 - Audio, key, energy, and section analysis are intentionally out of scope for the current context milestones.
