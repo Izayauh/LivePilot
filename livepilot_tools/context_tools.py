@@ -11,7 +11,7 @@ import json
 from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from context.session_manager import session_manager as default_session_manager
 from librarian.session_context import get_librarian_session_context
@@ -129,6 +129,7 @@ def get_creative_context(
     loop = _build_loop(session_state)
     tracks = _build_tracks_summary(session_state, live_snapshot, missing_fields)
     selected = _build_selected_context(session_state, tracks, missing_fields)
+    selected_clip = _build_selected_clip_context(selected, controller, reliable, missing_fields, limitations)
     librarian_active = _build_librarian_context(librarian, missing_fields)
     project_intent = get_project_intent(project_intent_path)
     if not project_intent.get("exists"):
@@ -140,6 +141,7 @@ def get_creative_context(
         "loop": loop,
         "tracks": tracks,
         "selected": selected,
+        "selected_clip": selected_clip,
         "active_librarian": librarian_active,
         "project_intent": project_intent.get("project_intent", _empty_project_intent()),
         "recent_actions": recent_actions,
@@ -161,6 +163,124 @@ def get_creative_context(
     }
 
     return _json_safe(context)
+
+
+def analyze_clip_context(
+    track_index: int,
+    clip_index: int,
+    controller: Any = None,
+    reliable: Any = None,
+) -> Dict[str, Any]:
+    """Return MIDI-note summary stats for one Session clip where available.
+
+    This is intentionally metadata/MIDI-only. It does not listen to audio or infer
+    key, chord, emotion, or energy. When the current controller cannot expose a
+    field, the field is left ``None`` and listed in ``missing_fields``.
+    """
+    _ = reliable
+    try:
+        track_index = int(track_index)
+        clip_index = int(clip_index)
+    except (TypeError, ValueError):
+        return {
+            "success": False,
+            "message": "track_index and clip_index must be integers",
+            "track_index": track_index,
+            "clip_index": clip_index,
+            "limitations": ["Invalid clip address; no Ableton query attempted."],
+            "missing_fields": ["track_index", "clip_index"],
+        }
+
+    summary: Dict[str, Any] = {
+        "success": True,
+        "track_index": track_index,
+        "clip_index": clip_index,
+        "clip_name": None,
+        "clip_length_beats": None,
+        "note_count": None,
+        "pitch_min": None,
+        "pitch_max": None,
+        "pitch_range": None,
+        "velocity_min": None,
+        "velocity_max": None,
+        "average_velocity": None,
+        "note_start_min": None,
+        "note_end_max": None,
+        "density_notes_per_beat": None,
+        "limitations": [],
+        "missing_fields": [],
+    }
+    missing_fields: List[str] = summary["missing_fields"]
+    limitations: List[str] = summary["limitations"]
+
+    if track_index < 0 or clip_index < 0:
+        summary["success"] = False
+        summary["message"] = "track_index and clip_index must be zero-based non-negative integers"
+        limitations.append("Invalid clip address; no Ableton query attempted.")
+        missing_fields.extend(_clip_context_value_fields())
+        return _json_safe(summary)
+
+    if controller is None:
+        limitations.append("No Ableton controller supplied; MIDI clip fields are unavailable.")
+        missing_fields.extend(_clip_context_value_fields())
+        return _json_safe(summary)
+
+    clip_payload = _read_clip_metadata(controller, track_index, clip_index, limitations)
+    _merge_clip_metadata(summary, clip_payload)
+
+    notes_result = _read_clip_notes(controller, track_index, clip_index, limitations)
+    note_count_hint = _int_or_none(_coalesce(notes_result.get("note_count"), notes_result.get("count")))
+    raw_notes = notes_result.get("notes")
+
+    if raw_notes is None:
+        if note_count_hint is not None:
+            summary["note_count"] = note_count_hint
+            missing_fields.extend(
+                [
+                    "pitch_min",
+                    "pitch_max",
+                    "pitch_range",
+                    "velocity_min",
+                    "velocity_max",
+                    "average_velocity",
+                    "note_start_min",
+                    "note_end_max",
+                ]
+            )
+        else:
+            missing_fields.extend(
+                [
+                    "note_count",
+                    "pitch_min",
+                    "pitch_max",
+                    "pitch_range",
+                    "velocity_min",
+                    "velocity_max",
+                    "average_velocity",
+                    "note_start_min",
+                    "note_end_max",
+                ]
+            )
+    else:
+        normalized_notes = [_normalize_note(note) for note in raw_notes]
+        summary["note_count"] = len(normalized_notes)
+        _merge_note_stats(summary, normalized_notes, missing_fields, limitations)
+
+    if summary["clip_name"] is None:
+        missing_fields.append("clip_name")
+    if summary["clip_length_beats"] is None:
+        missing_fields.append("clip_length_beats")
+
+    note_count = summary.get("note_count")
+    clip_length = summary.get("clip_length_beats")
+    if isinstance(note_count, int) and isinstance(clip_length, (int, float)) and clip_length > 0:
+        summary["density_notes_per_beat"] = note_count / float(clip_length)
+    else:
+        missing_fields.append("density_notes_per_beat")
+
+    summary["missing_fields"] = sorted(set(missing_fields))
+    summary["limitations"] = sorted(set(limitations))
+    return _json_safe(summary)
 
 
 def _project_intent_path(storage_path: Any = None) -> Path:
@@ -292,6 +412,43 @@ def _build_selected_context(
     }
 
 
+def _build_selected_clip_context(
+    selected: Dict[str, Any],
+    controller: Any,
+    reliable: Any,
+    missing_fields: List[str],
+    limitations: List[str],
+) -> Dict[str, Any]:
+    track_index = selected.get("track_index")
+    # Treat cached selected_scene as the clip slot until a selected-clip API exists.
+    clip_index = selected.get("scene_index")
+    if track_index is None or clip_index is None:
+        missing = []
+        if track_index is None:
+            missing.append("track_index")
+        if clip_index is None:
+            missing.append("clip_index")
+        missing_fields.append("selected_clip")
+        return {
+            "success": False,
+            "track_index": track_index,
+            "clip_index": clip_index,
+            "limitations": ["Selected track or clip slot is not available from current session state."],
+            "missing_fields": missing,
+        }
+
+    clip_context = analyze_clip_context(
+        track_index=track_index,
+        clip_index=clip_index,
+        controller=controller,
+        reliable=reliable,
+    )
+    for field in clip_context.get("missing_fields", []):
+        missing_fields.append(f"selected_clip.{field}")
+    limitations.extend(clip_context.get("limitations", []))
+    return clip_context
+
+
 def _build_librarian_context(librarian: Any, missing_fields: List[str]) -> Dict[str, Any]:
     active = librarian.get_active() if librarian and hasattr(librarian, "get_active") else None
     if not active:
@@ -382,6 +539,232 @@ def _call_if_available(obj: Any, method_name: str) -> Optional[Dict[str, Any]]:
     except Exception as exc:
         return {"success": False, "message": str(exc)}
     return result if isinstance(result, dict) else {"success": True, "result": result}
+
+
+def _clip_context_value_fields() -> List[str]:
+    return [
+        "clip_name",
+        "clip_length_beats",
+        "note_count",
+        "pitch_min",
+        "pitch_max",
+        "pitch_range",
+        "velocity_min",
+        "velocity_max",
+        "average_velocity",
+        "note_start_min",
+        "note_end_max",
+        "density_notes_per_beat",
+    ]
+
+
+def _read_clip_metadata(
+    controller: Any,
+    track_index: int,
+    clip_index: int,
+    limitations: List[str],
+) -> Dict[str, Any]:
+    method_name, result = _call_first_available(
+        controller,
+        ["get_clip_info", "get_clip", "get_clip_details"],
+        track_index,
+        clip_index,
+    )
+    if method_name is None:
+        limitations.append("Current controller exposes no clip metadata reader.")
+        return {}
+    if not _success(result):
+        limitations.append(
+            f"{method_name} could not read clip metadata: {result.get('message') or result.get('error') or 'unknown error'}"
+        )
+        return {}
+    payload = _mapping_payload(result, ["clip", "clip_info", "result", "data"])
+    return payload
+
+
+def _read_clip_notes(
+    controller: Any,
+    track_index: int,
+    clip_index: int,
+    limitations: List[str],
+) -> Dict[str, Any]:
+    method_name, result = _call_first_available(
+        controller,
+        [
+            "get_clip_notes",
+            "get_midi_clip_notes",
+            "get_midi_notes",
+            "get_notes_for_clip",
+            "get_clip_note_list",
+        ],
+        track_index,
+        clip_index,
+    )
+    if method_name is None:
+        limitations.append("Current controller exposes no MIDI note reader for clips.")
+        return {}
+    if not _success(result):
+        limitations.append(
+            f"{method_name} could not read MIDI notes: {result.get('message') or result.get('error') or 'unknown error'}"
+        )
+        return {}
+
+    payload = _mapping_payload(result, ["clip", "clip_notes", "midi_notes", "result", "data"])
+    notes = _notes_payload(result)
+    note_count = _coalesce(payload.get("note_count"), payload.get("count"), result.get("note_count"), result.get("count"))
+    return {"notes": notes, "note_count": note_count, "count": note_count}
+
+
+def _merge_clip_metadata(summary: Dict[str, Any], payload: Dict[str, Any]) -> None:
+    if not payload:
+        return
+    summary["clip_name"] = _coalesce(
+        payload.get("clip_name"),
+        payload.get("name"),
+        payload.get("title"),
+        summary.get("clip_name"),
+    )
+    summary["clip_length_beats"] = _float_or_none(
+        _coalesce(
+            payload.get("clip_length_beats"),
+            payload.get("length_beats"),
+            payload.get("length"),
+            payload.get("duration_beats"),
+            payload.get("duration"),
+            summary.get("clip_length_beats"),
+        )
+    )
+
+
+def _merge_note_stats(
+    summary: Dict[str, Any],
+    notes: List[Dict[str, Any]],
+    missing_fields: List[str],
+    limitations: List[str],
+) -> None:
+    if not notes:
+        limitations.append("MIDI notes were accessible, but the clip contains no notes.")
+        missing_fields.extend(
+            [
+                "pitch_min",
+                "pitch_max",
+                "pitch_range",
+                "velocity_min",
+                "velocity_max",
+                "average_velocity",
+                "note_start_min",
+                "note_end_max",
+            ]
+        )
+        return
+
+    pitches = [note["pitch"] for note in notes if note.get("pitch") is not None]
+    velocities = [note["velocity"] for note in notes if note.get("velocity") is not None]
+    starts = [note["start"] for note in notes if note.get("start") is not None]
+    ends = [note["end"] for note in notes if note.get("end") is not None]
+
+    if pitches:
+        summary["pitch_min"] = min(pitches)
+        summary["pitch_max"] = max(pitches)
+        summary["pitch_range"] = summary["pitch_max"] - summary["pitch_min"]
+    else:
+        missing_fields.extend(["pitch_min", "pitch_max", "pitch_range"])
+
+    if velocities:
+        summary["velocity_min"] = min(velocities)
+        summary["velocity_max"] = max(velocities)
+        summary["average_velocity"] = sum(velocities) / len(velocities)
+    else:
+        missing_fields.extend(["velocity_min", "velocity_max", "average_velocity"])
+
+    if starts:
+        summary["note_start_min"] = min(starts)
+    else:
+        missing_fields.append("note_start_min")
+
+    if ends:
+        summary["note_end_max"] = max(ends)
+    else:
+        missing_fields.append("note_end_max")
+
+
+def _call_first_available(obj: Any, method_names: List[str], *args: Any) -> Tuple[Optional[str], Dict[str, Any]]:
+    for method_name in method_names:
+        method = getattr(obj, method_name, None)
+        if not callable(method):
+            continue
+        try:
+            result = method(*args)
+        except TypeError:
+            try:
+                result = method(track_index=args[0], clip_index=args[1])
+            except Exception as exc:
+                return method_name, {"success": False, "message": str(exc)}
+        except Exception as exc:
+            return method_name, {"success": False, "message": str(exc)}
+        return method_name, result if isinstance(result, dict) else {"success": True, "result": result}
+    return None, {}
+
+
+def _mapping_payload(result: Dict[str, Any], keys: List[str]) -> Dict[str, Any]:
+    for key in keys:
+        value = result.get(key)
+        if isinstance(value, dict):
+            return dict(value)
+    return dict(result)
+
+
+def _notes_payload(result: Dict[str, Any]) -> Optional[List[Any]]:
+    for value in (result, _mapping_payload(result, ["clip", "clip_notes", "midi_notes", "result", "data"])):
+        if isinstance(value, dict):
+            for key in ("notes", "clip_notes", "midi_notes"):
+                notes = value.get(key)
+                if isinstance(notes, list):
+                    return notes
+    direct = result.get("result")
+    if isinstance(direct, list):
+        return direct
+    return None
+
+
+def _normalize_note(note: Any) -> Dict[str, Any]:
+    if isinstance(note, dict):
+        pitch = _int_or_none(_coalesce(note.get("pitch"), note.get("note"), note.get("midi_note")))
+        start = _float_or_none(_coalesce(note.get("start"), note.get("start_time"), note.get("time"), note.get("beat")))
+        duration = _float_or_none(_coalesce(note.get("duration"), note.get("length"), note.get("length_beats")))
+        end = _float_or_none(_coalesce(note.get("end"), note.get("end_time"), note.get("stop")))
+        if end is None and start is not None and duration is not None:
+            end = start + duration
+        velocity = _float_or_none(note.get("velocity"))
+        return {"pitch": pitch, "start": start, "end": end, "velocity": velocity}
+
+    if isinstance(note, (list, tuple)):
+        pitch = _int_or_none(note[0] if len(note) > 0 else None)
+        start = _float_or_none(note[1] if len(note) > 1 else None)
+        duration = _float_or_none(note[2] if len(note) > 2 else None)
+        velocity = _float_or_none(note[3] if len(note) > 3 else None)
+        end = start + duration if start is not None and duration is not None else None
+        return {"pitch": pitch, "start": start, "end": end, "velocity": velocity}
+
+    return {"pitch": None, "start": None, "end": None, "velocity": None}
+
+
+def _int_or_none(value: Any) -> Optional[int]:
+    try:
+        if value is None:
+            return None
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _float_or_none(value: Any) -> Optional[float]:
+    try:
+        if value is None:
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _success(result: Optional[Dict[str, Any]]) -> bool:
