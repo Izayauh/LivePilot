@@ -135,6 +135,8 @@ Type `/health` in the chat input to test relay connectivity.
 > ./venv/Scripts/python.exe ableton_bridge.py --list              # list all functions
 > ./venv/Scripts/python.exe ableton_bridge.py get_track_list '{}'  # query Ableton
 > ./venv/Scripts/python.exe ableton_bridge.py get_creative_context '{}' # structured creative context
+> ./venv/Scripts/python.exe ableton_bridge.py set_project_intent '{"genre":"rnb","mood":"intimate","references":["Trust Me - The Fray"],"arrangement_goal":"preserve groove while improving emotional lift","avoid":["fake listening claims"]}'
+> ./venv/Scripts/python.exe ableton_bridge.py get_project_intent '{}'
 > ```
 
 Example `get_creative_context` output:
@@ -146,6 +148,16 @@ Example `get_creative_context` output:
   "tracks": {"count": 1, "items": [{"index": 0, "number": 1, "name": "Piano"}]},
   "selected": {"track_index": 0, "scene_index": 0},
   "active_librarian": {"song": "Trust Me", "section": "verse", "chain": []},
+  "project_intent": {
+    "genre": "rnb",
+    "references": ["Trust Me - The Fray"],
+    "mood": "intimate",
+    "arrangement_goal": "preserve groove while improving emotional lift",
+    "prefer": [],
+    "avoid": ["fake listening claims"],
+    "notes": null,
+    "updated_at": "2026-05-01T00:00:00"
+  },
   "recent_actions": [],
   "project": {"name": "Trust Me Sketch", "genre": "rnb", "stage": "arrangement"},
   "known_limitations": {"limitations": [], "missing_fields": []}

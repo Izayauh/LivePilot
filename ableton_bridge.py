@@ -33,7 +33,11 @@ if _REPO_ROOT not in sys.path:
 try:
     from ableton_controls import ableton  # module-level singleton (one listener on 11001)
     from ableton_controls.reliable_params import ReliableParameterController
-    from livepilot_tools.context_tools import get_creative_context as _get_creative_context
+    from livepilot_tools.context_tools import (
+        get_creative_context as _get_creative_context,
+        get_project_intent as _get_project_intent,
+        set_project_intent as _set_project_intent,
+    )
     _ABLETON_IMPORT_ERROR = None
 except Exception as _import_exc:  # pragma: no cover - exercised in lightweight test envs
     _ABLETON_IMPORT_ERROR = str(_import_exc)
@@ -83,6 +87,14 @@ except Exception as _import_exc:  # pragma: no cover - exercised in lightweight 
     def _get_creative_context(**kwargs):  # type: ignore[no-redef]
         from livepilot_tools.context_tools import get_creative_context
         return get_creative_context(**kwargs)
+
+    def _get_project_intent(**kwargs):  # type: ignore[no-redef]
+        from livepilot_tools.context_tools import get_project_intent
+        return get_project_intent(**kwargs)
+
+    def _set_project_intent(intent, **kwargs):  # type: ignore[no-redef]
+        from livepilot_tools.context_tools import set_project_intent
+        return set_project_intent(intent, **kwargs)
 
 # ---------------------------------------------------------------------------
 # Singleton controller instance — reuse the one from ableton_controls to avoid
@@ -353,6 +365,8 @@ def _describe_functions():
         "refresh_plugin_list": {"args": {}, "description": "Refresh plugin list from Ableton"},
         "diag_osc":            {"args": {"timeout": {"type": "float", "required": False, "description": "Timeout in seconds (default 3.0)"}}, "description": "Run OSC connectivity diagnostic"},
         "get_creative_context": {"args": {}, "description": "Get structured creative context for the current LivePilot session"},
+        "set_project_intent":  {"args": {"intent": {"type": "dict", "required": False, "description": "Project intent object; direct JSON args are also accepted"}}, "description": "Persist project intent for creative context"},
+        "get_project_intent":  {"args": {}, "description": "Get persisted project intent"},
         "describe_functions":  {"args": {}, "description": "List all functions with argument schemas"},
     }
     return {"success": True, "functions": descriptions, "count": len(descriptions)}
@@ -464,6 +478,8 @@ def _build_dispatch(args: dict):
 
         # -- Creative context --
         "get_creative_context": lambda: _get_creative_context(controller=ableton, reliable=reliable_params),
+        "set_project_intent": lambda: _set_project_intent(args.get("intent", args)),
+        "get_project_intent": lambda: _get_project_intent(),
 
         # -- Introspection --
         "describe_functions":  lambda: _describe_functions(),

@@ -18,6 +18,7 @@ screenshots/
 config/vst_cache.json
 config/tool_registry.json
 config/macros.json
+data/project_intent.json
 
 # OS/editor artifacts
 .DS_Store
