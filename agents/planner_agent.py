@@ -8,6 +8,7 @@ Takes input from the Audio Engineer agent and produces actionable plans.
 from typing import Dict, Any, List, Optional
 from agents import AgentType, AgentMessage, WorkflowPlan
 from agent_system import BaseAgent
+from creative_workflow import annotate_plan_steps
 
 
 class PlannerAgent(BaseAgent):
@@ -178,10 +179,12 @@ class PlannerAgent(BaseAgent):
         action = content.get("action", "create_plan")
         
         if action == "create_plan":
+            creative_brief = content.get("creative_brief", {})
             plan = await self._create_plan(
                 goal=content.get("goal", ""),
                 analysis=content.get("analysis", {}),
-                research=content.get("research", {})
+                research=content.get("research", {}),
+                creative_brief=creative_brief
             )
             return AgentMessage(
                 sender=self.agent_type,
@@ -190,7 +193,8 @@ class PlannerAgent(BaseAgent):
                     "success": True,
                     "plan": plan.steps if plan else [],
                     "goal": plan.goal if plan else "",
-                    "requires_confirmation": plan.requires_confirmation if plan else False
+                    "requires_confirmation": plan.requires_confirmation if plan else False,
+                    "creative_brief": creative_brief
                 },
                 correlation_id=message.correlation_id
             )
@@ -214,7 +218,8 @@ class PlannerAgent(BaseAgent):
             correlation_id=message.correlation_id
         )
     
-    async def _create_plan(self, goal: str, analysis: Dict, research: Dict) -> Optional[WorkflowPlan]:
+    async def _create_plan(self, goal: str, analysis: Dict, research: Dict,
+                           creative_brief: Optional[Dict] = None) -> Optional[WorkflowPlan]:
         """
         Create a workflow plan from goal, analysis, and research
         """
@@ -249,14 +254,17 @@ class PlannerAgent(BaseAgent):
                 }
                 executable_steps.append(executable_step)
         
+        executable_steps = annotate_plan_steps(executable_steps, creative_brief)
+
         # Create rollback steps (reverse order, opposite actions)
         rollback_steps = self._create_rollback_steps(executable_steps)
+        requires_taste_confirmation = bool((creative_brief or {}).get("missing_decisions"))
         
         return WorkflowPlan(
             goal=goal,
             steps=executable_steps,
             estimated_duration=len(executable_steps) * 0.5,  # 0.5s per step estimate
-            requires_confirmation=len(executable_steps) > 3,  # Confirm larger workflows
+            requires_confirmation=len(executable_steps) > 3 or requires_taste_confirmation,
             rollback_steps=rollback_steps
         )
     

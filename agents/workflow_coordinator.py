@@ -14,6 +14,8 @@ from datetime import datetime
 from enum import Enum
 
 from agents import AgentType, AgentMessage, IntentType
+from creative_workflow import build_creative_brief
+from discovery.learning_system import learning_system
 
 
 class WorkflowState(Enum):
@@ -55,6 +57,7 @@ class WorkflowContext:
     plan_result: Optional[Dict] = None
     implementation_result: Optional[Dict] = None
     execution_result: Optional[Dict] = None
+    creative_brief: Optional[Dict] = None
     started_at: datetime = field(default_factory=datetime.now)
     completed_at: Optional[datetime] = None
     error: Optional[str] = None
@@ -321,7 +324,17 @@ class WorkflowCoordinator:
                 actions.append({"type": "research", "result": research_result.content})
                 print(f"[WORKFLOW] Research complete")
 
-        # Step 3: Planning
+        # Step 3: Build deterministic creative brief / taste workflow contract
+        context.creative_brief = build_creative_brief(
+            request=context.original_request,
+            analysis=context.analysis_result or {},
+            research=context.research_result or {},
+            learning_system=learning_system,
+            orchestrator=self.orchestrator,
+        )
+        actions.append({"type": "creative_brief", "result": context.creative_brief})
+
+        # Step 4: Planning
         context.state = WorkflowState.PLANNING
         planner = self.orchestrator.get_agent(AgentType.PLANNER)
 
@@ -333,7 +346,8 @@ class WorkflowCoordinator:
                     "action": "create_plan",
                     "goal": context.original_request,
                     "analysis": context.analysis_result or {},
-                    "research": context.research_result or {}
+                    "research": context.research_result or {},
+                    "creative_brief": context.creative_brief
                 }
             )
             plan_result = await planner.process(message)
@@ -352,7 +366,7 @@ class WorkflowCoordinator:
                     "requires_confirmation": True
                 }
 
-        # Step 4: Implementation
+        # Step 5: Implementation
         context.state = WorkflowState.IMPLEMENTING
         implementer = self.orchestrator.get_agent(AgentType.IMPLEMENTER)
 
@@ -370,7 +384,7 @@ class WorkflowCoordinator:
             actions.append({"type": "implementation", "result": impl_result.content})
             print(f"[WORKFLOW] Implementation complete: {len(impl_result.content.get('commands', []))} commands generated")
 
-        # Step 5: Execution
+        # Step 6: Execution
         context.state = WorkflowState.EXECUTING
         executor = self.orchestrator.get_agent(AgentType.EXECUTOR)
 
