@@ -10,6 +10,7 @@ A voice-controlled AI assistant for Ableton Live 11, powered by Google Gemini 2.
 - 🔊 **Voice Feedback**: Jarvis responds with voice confirmations
 - 📡 **OSC Bridge**: Communicates with Ableton via OSC protocol
 - 💬 **Desktop Text Chat UI**: Local non-browser chat window for text-only control
+- 🎚️ **Waves Vocal Chains**: Waves-first vocal chain templates with local preference learning; see `docs/vocal-chains.md`
 
 ## Prerequisites
 

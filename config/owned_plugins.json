@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "live-pilot/owned-plugins.v1",
+  "host": {
+    "Waves": [
+      "CLA Vocals",
+      "CLA-2A",
+      "CLA-3A",
+      "CLA-76",
+      "CLA EPIC",
+      "Greg Wells VoiceCentric",
+      "Greg Wells PianoCentric",
+      "Eddie Kramer Vocal Channel",
+      "Eddie Kramer Drum Channel",
+      "Manny Marroquin Triple D",
+      "Manny Marroquin EQ",
+      "Manny Marroquin Reverb",
+      "Clarity Vx",
+      "Clarity Vx Pro",
+      "Sibilance",
+      "DeEsser",
+      "Vocal Rider",
+      "Bass Rider",
+      "MV2",
+      "Renaissance Vox",
+      "RVox",
+      "H-Reverb",
+      "H-Delay",
+      "RVerb",
+      "TrueVerb",
+      "Aphex Vintage Aural Exciter",
+      "Scheps Parallel Particles",
+      "Smack Attack",
+      "Vocal Bender",
+      "Tune Real-Time",
+      "WLM Plus",
+      "PAZ Analyzer"
+    ],
+    "Ableton Stock": [
+      "EQ Eight",
+      "Compressor",
+      "Glue Compressor",
+      "Multiband Dynamics",
+      "Reverb",
+      "Delay",
+      "Saturator",
+      "Utility",
+      "Gate"
+    ]
+  }
+}
