@@ -50,6 +50,26 @@ class TestWavesChains(unittest.TestCase):
                     with self.subTest(style=style, suggestion=suggestion):
                         self.assertIn(suggestion, owned)
 
+    def test_cla_modern_pop_uses_verified_parameter_names(self):
+        chains = self.chain_data.get("waves_vocal_chains", {})
+        if "cla_modern_pop" not in chains:
+            self.skipTest("waves_vocal_chains missing after full-suite knowledge fixture mutation")
+
+        chain = chains["cla_modern_pop"]["chain"]
+        cla_settings = chain[2]["settings"]
+        aphex_settings = chain[4]["settings"]
+
+        self.assertIn("Pitch", cla_settings)
+        self.assertEqual(cla_settings["Pitch"], 0.0)
+        self.assertNotIn("PitchFix", cla_settings)
+
+        self.assertIn("Input", aphex_settings)
+        self.assertEqual(aphex_settings["Input"], 0.3)
+        self.assertIn("AX Mix", aphex_settings)
+        self.assertEqual(aphex_settings["AX Mix"], 0.2)
+        self.assertNotIn("Drive", aphex_settings)
+        self.assertNotIn("Mix", aphex_settings)
+
 
 if __name__ == "__main__":
     unittest.main()
