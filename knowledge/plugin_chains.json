@@ -768,6 +768,222 @@
       "confidence": 0.8
     }
   },
+  "waves_vocal_chains": {
+    "cla_modern_pop": {
+      "description": "CLA-flavored modern pop/R&B vocal",
+      "track_type": "vocal",
+      "chain": [
+        {
+          "type": "cleanup",
+          "purpose": "cleanup pre-pass",
+          "plugin_suggestions": [
+            "Clarity Vx",
+            "Clarity Vx Pro"
+          ]
+        },
+        {
+          "type": "de-esser",
+          "purpose": "adaptive de-ess",
+          "plugin_suggestions": [
+            "Sibilance",
+            "DeEsser"
+          ]
+        },
+        {
+          "type": "channel_strip",
+          "purpose": "main curated chain",
+          "plugin_suggestions": [
+            "CLA Vocals"
+          ],
+          "settings": {
+            "Bass": 0.45,
+            "Treble": 0.55,
+            "Compress": 0.5,
+            "Reverb": 0.3,
+            "Delay": 0.2,
+            "PitchFix": 0.0
+          }
+        },
+        {
+          "type": "leveler",
+          "purpose": "level automation",
+          "plugin_suggestions": [
+            "Vocal Rider"
+          ]
+        },
+        {
+          "type": "exciter",
+          "purpose": "top-end air",
+          "plugin_suggestions": [
+            "Aphex Vintage Aural Exciter"
+          ],
+          "settings": {
+            "Drive": 0.3,
+            "Mix": 0.2
+          }
+        }
+      ]
+    },
+    "greg_wells_pop_ballad": {
+      "description": "Wells-flavored pop ballad / midtempo",
+      "track_type": "vocal",
+      "chain": [
+        {
+          "type": "cleanup",
+          "purpose": "cleanup pre-pass",
+          "plugin_suggestions": [
+            "Clarity Vx",
+            "Clarity Vx Pro"
+          ]
+        },
+        {
+          "type": "de-esser",
+          "purpose": "adaptive de-ess",
+          "plugin_suggestions": [
+            "Sibilance",
+            "DeEsser"
+          ]
+        },
+        {
+          "type": "channel_strip",
+          "purpose": "main curated chain",
+          "plugin_suggestions": [
+            "Greg Wells VoiceCentric"
+          ],
+          "settings": {
+            "Vocal": 0.5,
+            "Reverb": 0.4,
+            "Compression": 0.4
+          }
+        },
+        {
+          "type": "leveler",
+          "purpose": "level automation",
+          "plugin_suggestions": [
+            "Vocal Rider"
+          ]
+        },
+        {
+          "type": "reverb",
+          "purpose": "send space",
+          "plugin_suggestions": [
+            "H-Reverb",
+            "RVerb"
+          ],
+          "send": true,
+          "settings": {
+            "Predelay": 0.2,
+            "Decay": 1.8,
+            "Mix": 0.15
+          }
+        }
+      ]
+    },
+    "eddie_kramer_rock_rap": {
+      "description": "Kramer-flavored rock/rap vocal",
+      "track_type": "vocal",
+      "chain": [
+        {
+          "type": "cleanup",
+          "purpose": "cleanup pre-pass",
+          "plugin_suggestions": [
+            "Clarity Vx",
+            "Clarity Vx Pro"
+          ]
+        },
+        {
+          "type": "de-esser",
+          "purpose": "adaptive de-ess",
+          "plugin_suggestions": [
+            "Sibilance",
+            "DeEsser"
+          ]
+        },
+        {
+          "type": "channel_strip",
+          "purpose": "main curated chain",
+          "plugin_suggestions": [
+            "Eddie Kramer Vocal Channel"
+          ],
+          "settings": {
+            "Drive": 0.4,
+            "Compress": 0.6,
+            "EQ_Low": 0.45,
+            "EQ_High": 0.55
+          }
+        },
+        {
+          "type": "leveler",
+          "purpose": "level automation",
+          "plugin_suggestions": [
+            "Vocal Rider"
+          ]
+        },
+        {
+          "type": "delay_reverb",
+          "purpose": "send ambience",
+          "plugin_suggestions": [
+            "CLA EPIC"
+          ],
+          "send": true,
+          "settings": {
+            "Reverb": 0.2,
+            "Delay": 0.25,
+            "Mix": 0.15
+          }
+        }
+      ]
+    },
+    "clean_modern_neutral": {
+      "description": "Minimal, transparent fallback",
+      "track_type": "vocal",
+      "chain": [
+        {
+          "type": "cleanup",
+          "purpose": "cleanup pre-pass",
+          "plugin_suggestions": [
+            "Clarity Vx",
+            "Clarity Vx Pro"
+          ]
+        },
+        {
+          "type": "de-esser",
+          "purpose": "adaptive de-ess",
+          "plugin_suggestions": [
+            "Sibilance",
+            "DeEsser"
+          ]
+        },
+        {
+          "type": "compressor",
+          "purpose": "transparent vocal control",
+          "plugin_suggestions": [
+            "Renaissance Vox",
+            "RVox"
+          ]
+        },
+        {
+          "type": "leveler",
+          "purpose": "level automation",
+          "plugin_suggestions": [
+            "Vocal Rider"
+          ]
+        },
+        {
+          "type": "reverb",
+          "purpose": "small room",
+          "plugin_suggestions": [
+            "TrueVerb",
+            "RVerb"
+          ],
+          "settings": {
+            "Decay": 1.0,
+            "Mix": 0.1
+          }
+        }
+      ]
+    }
+  },
   "presets": {
     "vocal_basic": [
       "eq",

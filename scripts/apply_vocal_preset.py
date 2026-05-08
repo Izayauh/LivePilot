@@ -9,6 +9,7 @@ async — just load devices and set parameters.
 Usage:
     python scripts/apply_vocal_preset.py --track 0
     python scripts/apply_vocal_preset.py --track 0 --preset knowledge/chains/travis_scott.json
+    python scripts/apply_vocal_preset.py --track 0 --style cla_modern_pop
     python scripts/apply_vocal_preset.py --track 0 --dry-run          # validate only
     python scripts/apply_vocal_preset.py --track 0 --device 2         # start from device #2 only (skip loads, just set params)
 
@@ -28,6 +29,13 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from osc_preflight import check_osc_bridge
+from plugins.chain_resolver import resolve_plugin
+from preferences.chain_preferences import load_overrides, merge_with_template
+
+
+DEFAULT_PRESET = os.path.join(_REPO_ROOT, "knowledge", "chains", "travis_scott.json")
+OWNED_PLUGINS_PATH = os.path.join(_REPO_ROOT, "config", "owned_plugins.json")
+PLUGIN_CHAINS_PATH = os.path.join(_REPO_ROOT, "knowledge", "plugin_chains.json")
 
 
 # ---------------------------------------------------------------------------
@@ -44,6 +52,76 @@ def _execute(func_name: str, args: dict) -> dict:
         return dispatch[func_name]()
     except Exception as e:
         return {"success": False, "message": str(e)}
+
+
+def _load_json(path: str) -> dict:
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _load_waves_style_preset(style: str) -> dict:
+    chain_data = _load_json(PLUGIN_CHAINS_PATH)
+    styles = chain_data.get("waves_vocal_chains", {})
+    if style not in styles:
+        available = ", ".join(sorted(styles))
+        raise ValueError(f"Unknown Waves vocal chain style '{style}'. Available: {available}")
+
+    style_data = styles[style]
+    owned = _load_json(OWNED_PLUGINS_PATH)
+
+    resolved_chain = []
+    for step in style_data.get("chain", []):
+        plugin_name, host = resolve_plugin(step.get("plugin_suggestions", []), owned)
+        resolved_step = dict(step)
+        resolved_step["plugin_name"] = plugin_name
+        resolved_step["host"] = host
+        resolved_chain.append(resolved_step)
+
+    chain = merge_with_template(resolved_chain, load_overrides(style))
+    return {
+        "artist": style,
+        "track_type": style_data.get("track_type", "vocal"),
+        "description": style_data.get("description", ""),
+        "style": style,
+        "chain": [
+            {
+                "plugin_name": step["plugin_name"],
+                "host": step.get("host"),
+                "purpose": step.get("purpose", ""),
+                "parameters": step.get("settings", {}),
+            }
+            for step in chain
+        ],
+    }
+
+
+def _filter_parameters_for_device(track_index: int, device_index: int,
+                                  parameters: dict) -> dict:
+    """Skip parameters Ableton does not report for the loaded device."""
+    if not parameters:
+        return parameters
+
+    params_result = _execute("get_device_parameters", {
+        "track_index": track_index,
+        "device_index": device_index,
+    })
+    if not params_result.get("success"):
+        print(f"    WARNING: Could not inspect device parameters: "
+              f"{params_result.get('message', 'unknown')}")
+        return parameters
+
+    available = set(params_result.get("names", []))
+    if not available:
+        return parameters
+
+    filtered = {}
+    for name, value in parameters.items():
+        if name in available:
+            filtered[name] = value
+        else:
+            print(f"      WARNING: Parameter '{name}' not found on device {device_index}; skipping")
+
+    return filtered
 
 
 # ---------------------------------------------------------------------------
@@ -119,6 +197,10 @@ def load_and_configure_device(track_index: int, plugin_name: str,
     if not parameters:
         return result
 
+    parameters = _filter_parameters_for_device(track_index, device_index, parameters)
+    if not parameters:
+        return result
+
     print(f"    Setting {len(parameters)} parameters...")
     param_result = _execute("set_device_parameters_by_name", {
         "track_index": track_index,
@@ -183,7 +265,11 @@ def set_params_only(track_index: int, plugin_name: str,
         "errors": [],
     }
 
+    parameters = _filter_parameters_for_device(track_index, device_index, parameters)
     print(f"  Setting params on existing device {device_index} ('{plugin_name}')...")
+    if not parameters:
+        return result
+
     param_result = _execute("set_device_parameters_by_name", {
         "track_index": track_index,
         "device_index": device_index,
@@ -222,9 +308,10 @@ def set_params_only(track_index: int, plugin_name: str,
 def main():
     parser = argparse.ArgumentParser(description="Apply a vocal preset to a track")
     parser.add_argument("--track", type=int, required=True, help="Track index (0-based)")
-    parser.add_argument("--preset", type=str,
-                        default=os.path.join(_REPO_ROOT, "knowledge", "chains", "travis_scott.json"),
+    parser.add_argument("--preset", type=str, default=None,
                         help="Path to preset JSON file")
+    parser.add_argument("--style", type=str, default=None,
+                        help="Waves vocal chain style from knowledge/plugin_chains.json")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print plan without executing")
     parser.add_argument("--device", type=int, default=None,
@@ -234,9 +321,23 @@ def main():
     args = parser.parse_args()
 
     # Load preset
-    print(f"Loading preset: {args.preset}")
-    with open(args.preset) as f:
-        preset = json.load(f)
+    if args.style and args.preset:
+        parser.error("--style and --preset are mutually exclusive")
+
+    if args.style:
+        print(f"Loading Waves vocal chain style: {args.style}")
+        try:
+            preset = _load_waves_style_preset(args.style)
+        except ValueError as e:
+            print(f"[FAIL] {e}")
+            sys.exit(1)
+        preset_label = f"style:{args.style}"
+    else:
+        preset_path = args.preset or DEFAULT_PRESET
+        print(f"Loading preset: {preset_path}")
+        with open(preset_path, encoding="utf-8") as f:
+            preset = json.load(f)
+        preset_label = os.path.basename(preset_path)
 
     artist = preset.get("artist", "Unknown")
     track_type = preset.get("track_type", "vocal")
@@ -271,9 +372,11 @@ def main():
     print("=" * 60)
     for i, device in enumerate(chain):
         name = device.get("plugin_name", "?")
+        host = device.get("host")
         purpose = device.get("purpose", "")
         params = device.get("parameters", {})
-        print(f"  {i+1}. {name} ({len(params)} params) — {purpose}")
+        host_label = f" [{host}]" if host else ""
+        print(f"  {i+1}. {name}{host_label} ({len(params)} params) — {purpose}")
     print()
 
     if args.dry_run:
@@ -343,7 +446,7 @@ def main():
     os.makedirs(log_dir, exist_ok=True)
     report_path = os.path.join(log_dir, "vocal_preset_report.json")
     report = {
-        "preset": os.path.basename(args.preset),
+        "preset": preset_label,
         "artist": artist,
         "track_index": args.track,
         "dry_run": args.dry_run,
