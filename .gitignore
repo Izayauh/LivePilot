@@ -18,6 +18,7 @@ screenshots/
 config/vst_cache.json
 config/tool_registry.json
 config/macros.json
+config/reference_library.json
 data/project_intent.json
 preferences/*.json
 !preferences/.gitkeep

@@ -1520,22 +1520,81 @@ class AbletonController:
     # ==================== TRACK MANAGEMENT ====================
     # Create, delete, duplicate, and rename tracks
     
-    def create_audio_track(self, index=-1):
+    def create_audio_track(self, index=-1, name=None):
         """
         Create a new audio track
         
         Args:
             index: Position to insert track (-1 = end of list, 0 = first position)
+            name: Optional track name to apply after creation
             
         Returns:
             dict: {"success": bool, "message": str}
         """
         try:
+            track_index = None
+            before = self.get_track_list()
+            if before.get("success"):
+                before_count = len(before.get("tracks", []))
+                track_index = before_count if index == -1 else int(index)
+
             self.client.send_message("/live/song/create_audio_track", [index])
             position = "at end" if index == -1 else f"at position {index + 1}"
-            return {"success": True, "message": f"Audio track created {position}"}
+            if name and track_index is not None:
+                time.sleep(0.1)
+                rename_result = self.set_track_name(track_index, name)
+                if not rename_result.get("success"):
+                    return {
+                        "success": False,
+                        "track_index": track_index,
+                        "message": rename_result.get(
+                            "message",
+                            f"Audio track created {position}, but rename failed",
+                        ),
+                    }
+            return {
+                "success": True,
+                "track_index": track_index,
+                "message": f"Audio track created {position}",
+            }
         except Exception as e:
             return {"success": False, "message": f"Failed to create audio track: {e}"}
+
+    def set_clip_path(self, track_index, clip_index, audio_path):
+        """
+        Place a local audio file into a Session clip slot.
+
+        This is intentionally not faked: stock AbletonOSC in this repo does not
+        currently expose clip import from an arbitrary file path, and
+        JarvisDeviceLoader only handles device loading.
+        """
+        raise NotImplementedError(
+            "set_clip_path requires a Live clip-import endpoint in AbletonOSC "
+            "or JarvisDeviceLoader; no reachable bridge endpoint exists yet."
+        )
+
+    def get_clip_audio_path(self, track_index, clip_index):
+        """
+        Return the backing file path for an audio clip.
+
+        This needs Live's clip API exposed through a remote script. The current
+        AbletonOSC/JarvisDeviceLoader bridge does not provide it.
+        """
+        raise NotImplementedError(
+            "get_clip_audio_path requires clip.file_path exposure through "
+            "AbletonOSC or JarvisDeviceLoader; no reachable endpoint exists yet."
+        )
+
+    def set_clip_detune(self, track_index, clip_index, cents):
+        """
+        Detune an audio clip in cents.
+
+        Stubbed until the bridge exposes clip-level pitch controls.
+        """
+        raise NotImplementedError(
+            "set_clip_detune requires clip-level pitch controls through "
+            "AbletonOSC or JarvisDeviceLoader; no reachable endpoint exists yet."
+        )
     
     def create_midi_track(self, index=-1):
         """
