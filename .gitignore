@@ -29,3 +29,10 @@ nul
 wsl_diag.txt
 test_output.txt
 calibration_log.txt
+
+# Codex Cloud task clones — never check these in
+live-pilot-*/
+
+# Runtime state directories
+context/
+data/
