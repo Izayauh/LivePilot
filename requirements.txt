@@ -11,6 +11,8 @@ python-osc>=1.9.3
 # ================ Audio ================
 # Audio input/output for voice control
 PyAudio>=0.2.14
+pyloudnorm>=0.1.1
+soundfile>=0.12.1
 
 # ================ Environment ================
 # Environment variable management

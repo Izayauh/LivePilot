@@ -77,6 +77,7 @@ class TestAbletonBridgeList(unittest.TestCase):
             "set_track_name", "set_track_color",
             # Scene / clip
             "fire_scene", "fire_clip", "stop_clip",
+            "set_clip_path", "get_clip_audio_path", "set_clip_detune",
             # Device queries
             "get_num_devices", "get_track_devices", "get_device_name",
             "get_device_class_name", "get_device_parameters",
@@ -84,7 +85,7 @@ class TestAbletonBridgeList(unittest.TestCase):
             # Device control
             "set_device_parameter", "set_device_parameter_by_name",
             "set_device_parameters_by_name",
-            "set_device_enabled", "delete_device",
+            "set_device_enabled", "delete_device", "add_utility_device",
             # Plugin management
             "add_plugin_to_track", "get_available_plugins",
             "find_plugin", "refresh_plugin_list",

@@ -318,6 +318,56 @@ def delete_device_osc(track_index: int, device_index: int):
         return {"success": False, "message": f"Failed to delete device: {e}"}
 
 
+def add_utility_device(track_index: int, gain_db: float, name: str):
+    """Append a Utility device and set its Gain parameter.
+
+    AbletonOSC/JarvisDeviceLoader can load Utility and set parameters, but this
+    bridge cannot rename devices yet. The requested name is returned as metadata
+    so callers can still present the intended role clearly.
+    """
+    try:
+        before = ableton.get_track_devices_sync(track_index)
+        before_count = before.get("count", 0) if before.get("success") else None
+
+        load_result = ableton.load_device(track_index, "Utility", -1)
+        if not load_result.get("success"):
+            return load_result
+
+        device_index = before_count
+        if device_index is None:
+            after = ableton.get_track_devices_sync(track_index)
+            if not after.get("success") or after.get("count", 0) < 1:
+                return {
+                    "success": False,
+                    "message": "Utility loaded, but device index could not be resolved",
+                }
+            device_index = after.get("count") - 1
+
+        gain_result = reliable_params.set_parameter_by_name(
+            track_index,
+            device_index,
+            "Gain",
+            float(gain_db),
+        )
+        if not gain_result.get("success"):
+            return gain_result
+
+        return {
+            "success": True,
+            "track_index": track_index,
+            "device_index": device_index,
+            "gain_db": float(gain_db),
+            "requested_name": name,
+            "rename_supported": False,
+            "message": (
+                f"Utility appended to track {track_index + 1} at "
+                f"{gain_db:+.1f} dB; device rename is not exposed by the bridge"
+            ),
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Failed to add Utility device: {e}"}
+
+
 # ---------------------------------------------------------------------------
 # Function introspection
 # ---------------------------------------------------------------------------
@@ -355,7 +405,10 @@ def _describe_functions():
         "fire_scene":          {"args": {"scene_index": {"type": "int", "required": True}}, "description": "Fire a scene"},
         "fire_clip":           {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}}, "description": "Fire a clip"},
         "stop_clip":           {"args": {"track_index": {"type": "int", "required": True}}, "description": "Stop all clips on a track"},
-        "create_audio_track":  {"args": {"index": {"type": "int", "required": False, "description": "-1=end"}}, "description": "Create audio track"},
+        "create_audio_track":  {"args": {"index": {"type": "int", "required": False, "description": "-1=end"}, "name": {"type": "str", "required": False}}, "description": "Create audio track"},
+        "set_clip_path":       {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}, "audio_path": {"type": "str", "required": True}}, "description": "Place local audio file into a clip slot (stubbed until bridge endpoint exists)"},
+        "get_clip_audio_path": {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}}, "description": "Return backing audio path for a clip (stubbed until bridge endpoint exists)"},
+        "set_clip_detune":     {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}, "cents": {"type": "float", "required": True}}, "description": "Detune an audio clip in cents (stubbed until bridge endpoint exists)"},
         "create_midi_track":   {"args": {"index": {"type": "int", "required": False, "description": "-1=end"}}, "description": "Create MIDI track"},
         "create_return_track": {"args": {}, "description": "Create return track"},
         "delete_track":        {"args": {"track_index": {"type": "int", "required": True}}, "description": "Delete a track"},
@@ -374,6 +427,7 @@ def _describe_functions():
         "set_device_parameters_by_name": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "params": {"type": "dict", "required": True, "description": "{name: value, ...}"}}, "description": "Set multiple device parameters by name"},
         "set_device_enabled":  {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "enabled": {"type": "int", "required": True}}, "description": "Enable/bypass a device"},
         "delete_device":       {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}}, "description": "Delete a device from track"},
+        "add_utility_device":  {"args": {"track_index": {"type": "int", "required": True}, "gain_db": {"type": "float", "required": True}, "name": {"type": "str", "required": True}}, "description": "Append Utility and set Gain"},
         "add_plugin_to_track": {"args": {"track_index": {"type": "int", "required": True}, "plugin_name": {"type": "str", "required": True}, "position": {"type": "int", "required": False}}, "description": "Load a plugin onto a track"},
         "get_available_plugins": {"args": {"category": {"type": "str", "required": False}}, "description": "List available plugins"},
         "find_plugin":         {"args": {"query": {"type": "str", "required": True}, "category": {"type": "str", "required": False}}, "description": "Find plugin by name"},
@@ -433,7 +487,14 @@ def _build_dispatch(args: dict):
         "stop_clip":           lambda: ableton.stop_clip(track_index),
 
         # -- Track management --
-        "create_audio_track":  lambda: ableton.create_audio_track(_to_int(args.get("index", -1))),
+        "create_audio_track":  lambda: ableton.create_audio_track(
+            _to_int(args.get("index", -1)), args.get("name")),
+        "set_clip_path":       lambda: ableton.set_clip_path(
+            track_index, _to_int(args.get("clip_index")), args.get("audio_path")),
+        "get_clip_audio_path": lambda: ableton.get_clip_audio_path(
+            track_index, _to_int(args.get("clip_index", 0))),
+        "set_clip_detune":     lambda: ableton.set_clip_detune(
+            track_index, _to_int(args.get("clip_index")), args.get("cents")),
         "create_midi_track":   lambda: ableton.create_midi_track(_to_int(args.get("index", -1))),
         "create_return_track": lambda: ableton.create_return_track(),
         "delete_track":        lambda: ableton.delete_track(track_index),
@@ -482,6 +543,8 @@ def _build_dispatch(args: dict):
             _to_int(args.get("enabled"))),
         "delete_device":       lambda: delete_device_osc(
             track_index, _to_int(args.get("device_index"))),
+        "add_utility_device":  lambda: add_utility_device(
+            track_index, args.get("gain_db"), args.get("name")),
 
         # -- Plugin management --
         "add_plugin_to_track": lambda: ableton.load_device(
@@ -528,13 +591,13 @@ def _build_dispatch(args: dict):
 TRACK_OPERATIONS = {
     "mute_track", "solo_track", "arm_track",
     "set_track_volume", "set_track_pan", "set_track_send",
-    "fire_clip", "stop_clip",
+    "fire_clip", "stop_clip", "set_clip_path", "get_clip_audio_path", "set_clip_detune",
     "get_num_devices", "get_track_devices", "get_device_name",
     "get_device_class_name", "get_device_parameters",
     "get_device_parameter_value", "set_device_parameter",
     "set_device_parameter_by_name", "set_device_parameters_by_name",
     "set_device_enabled",
-    "add_plugin_to_track", "delete_device",
+    "add_plugin_to_track", "delete_device", "add_utility_device",
     "delete_track", "delete_return_track", "duplicate_track",
     "set_track_name", "set_track_color",
     "get_track_mute", "get_track_solo", "get_track_arm",

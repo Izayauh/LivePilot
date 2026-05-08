@@ -33,6 +33,9 @@ python scripts/remember_chain.py --track 0 --style cla_modern_pop --note "less c
 The next `apply_vocal_preset.py --style ...` run loads the committed template,
 then applies your saved overrides on top.
 
+For fair reference checks, use `scripts/register_reference.py` and
+`scripts/setup_comparison.py`; see `docs/comparison-workflow.md`.
+
 ## Tuning Timeouts
 
 Waves plugins can take several seconds to load the first time Ableton scans them

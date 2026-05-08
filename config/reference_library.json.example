@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "live-pilot/reference-library.v1",
+  "entries": {
+    "jackie_brown": {
+      "title": "Jackie Brown",
+      "artist": "Brent Faiyaz",
+      "path": "C:/Users/isaia/Music/References/Brent Faiyaz - Jackie Brown.wav",
+      "lufs": -9.7,
+      "addedAt": "2026-05-08T22:00:00Z"
+    }
+  }
+}

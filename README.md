@@ -11,6 +11,7 @@ A voice-controlled AI assistant for Ableton Live 11, powered by Google Gemini 2.
 - 📡 **OSC Bridge**: Communicates with Ableton via OSC protocol
 - 💬 **Desktop Text Chat UI**: Local non-browser chat window for text-only control
 - 🎚️ **Waves Vocal Chains**: Waves-first vocal chain templates with local preference learning; see `docs/vocal-chains.md`
+- ⚖️ **Reference A/B Setup**: Register local references and set up loudness-matched vocal comparisons; see `docs/comparison-workflow.md`
 
 ## Prerequisites
 
