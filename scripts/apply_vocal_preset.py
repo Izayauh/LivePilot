@@ -36,6 +36,26 @@ from preferences.chain_preferences import load_overrides, merge_with_template
 DEFAULT_PRESET = os.path.join(_REPO_ROOT, "knowledge", "chains", "travis_scott.json")
 OWNED_PLUGINS_PATH = os.path.join(_REPO_ROOT, "config", "owned_plugins.json")
 PLUGIN_CHAINS_PATH = os.path.join(_REPO_ROOT, "knowledge", "plugin_chains.json")
+DEVICE_LOAD_TIMEOUT_ENV = "LIVE_PILOT_DEVICE_LOAD_TIMEOUT_SEC"
+DEFAULT_DEVICE_LOAD_TIMEOUT_SEC = 30.0
+DEVICE_LOAD_POLL_INTERVAL_SEC = 1.0
+DUPLICATE_DEVICE_EXIT_CODE = 2
+LOAD_FAILURE_EXIT_CODE = 3
+
+
+class DuplicateDeviceError(RuntimeError):
+    """Raised when a load command creates more devices than requested."""
+
+    def __init__(self, plugin_name: str, expected_count: int,
+                 actual_count: int, track_index: int):
+        self.plugin_name = plugin_name
+        self.expected_count = expected_count
+        self.actual_count = actual_count
+        self.track_index = track_index
+        super().__init__(
+            f"Detected duplicate device after loading '{plugin_name}'. "
+            f"Track has {actual_count} devices, expected {expected_count}."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -52,6 +72,108 @@ def _execute(func_name: str, args: dict) -> dict:
         return dispatch[func_name]()
     except Exception as e:
         return {"success": False, "message": str(e)}
+
+
+def _get_device_load_timeout_sec() -> float:
+    raw = os.environ.get(DEVICE_LOAD_TIMEOUT_ENV)
+    if not raw:
+        return DEFAULT_DEVICE_LOAD_TIMEOUT_SEC
+    try:
+        value = float(raw)
+    except ValueError:
+        print(f"WARNING: Invalid {DEVICE_LOAD_TIMEOUT_ENV}={raw!r}; "
+              f"using {DEFAULT_DEVICE_LOAD_TIMEOUT_SEC:.0f}s")
+        return DEFAULT_DEVICE_LOAD_TIMEOUT_SEC
+    return value if value > 0 else DEFAULT_DEVICE_LOAD_TIMEOUT_SEC
+
+
+def _get_track_devices(track_index: int) -> list:
+    devices_result = _execute("get_track_devices", {"track_index": track_index})
+    if not devices_result.get("success"):
+        raise RuntimeError(devices_result.get("message", "Could not get track devices"))
+    return devices_result.get("devices", [])
+
+
+def _is_recoverable_load_result(load_result: dict) -> bool:
+    if load_result.get("success"):
+        return True
+    message = str(load_result.get("message", "")).lower()
+    return (
+        "timeout" in message
+        or "no response" in message
+        or "not responding" in message
+    )
+
+
+def _load_device_verified(track_index: int, plugin_name: str,
+                          timeout_sec: float = None,
+                          poll_interval_sec: float = DEVICE_LOAD_POLL_INTERVAL_SEC) -> dict:
+    """Load one device and verify exactly one device was added to the track."""
+    timeout_sec = timeout_sec if timeout_sec is not None else _get_device_load_timeout_sec()
+    before_devices = _get_track_devices(track_index)
+    before_count = len(before_devices)
+    expected_count = before_count + 1
+
+    load_result = _execute("add_plugin_to_track", {
+        "track_index": track_index,
+        "plugin_name": plugin_name,
+        "position": -1,
+        "timeout": timeout_sec,
+    })
+
+    if not load_result.get("success") and not _is_recoverable_load_result(load_result):
+        return {
+            "success": False,
+            "plugin_name": plugin_name,
+            "before_count": before_count,
+            "actual_count": before_count,
+            "device_index": None,
+            "devices": before_devices,
+            "exit_code": LOAD_FAILURE_EXIT_CODE,
+            "message": load_result.get("message", "Load failed"),
+        }
+
+    deadline = time.time() + timeout_sec
+    last_devices = before_devices
+    while time.time() <= deadline:
+        last_devices = _get_track_devices(track_index)
+        actual_count = len(last_devices)
+
+        if actual_count == expected_count:
+            return {
+                "success": True,
+                "plugin_name": plugin_name,
+                "before_count": before_count,
+                "actual_count": actual_count,
+                "device_index": actual_count - 1,
+                "devices": last_devices,
+                "load_result": load_result,
+                "message": "Device loaded and verified",
+            }
+
+        if actual_count > expected_count:
+            raise DuplicateDeviceError(
+                plugin_name=plugin_name,
+                expected_count=expected_count,
+                actual_count=actual_count,
+                track_index=track_index,
+            )
+
+        time.sleep(poll_interval_sec)
+
+    return {
+        "success": False,
+        "plugin_name": plugin_name,
+        "before_count": before_count,
+        "actual_count": len(last_devices),
+        "device_index": None,
+        "devices": last_devices,
+        "exit_code": LOAD_FAILURE_EXIT_CODE,
+        "message": (
+            f"Timed out waiting for '{plugin_name}' to appear on track "
+            f"{track_index}; expected {expected_count} devices, found {len(last_devices)}"
+        ),
+    }
 
 
 def _load_json(path: str) -> dict:
@@ -301,6 +423,169 @@ def set_params_only(track_index: int, plugin_name: str,
     return result
 
 
+def _empty_device_result(plugin_name: str, device_index: int = None) -> dict:
+    return {
+        "plugin_name": plugin_name,
+        "device_index": device_index,
+        "loaded": False,
+        "params_set": 0,
+        "params_failed": 0,
+        "param_details": [],
+        "errors": [],
+    }
+
+
+def _print_duplicate_error(error: DuplicateDeviceError):
+    print(f"ERROR: Detected duplicate device after loading '{error.plugin_name}'.")
+    print(f"Track has {error.actual_count} devices, expected {error.expected_count}.")
+    print("Chain is in a corrupt state and was not configured.")
+    print(f"Recovery: select all devices on track {error.track_index} in Ableton and delete, then re-run.")
+
+
+def apply_chain(track_index: int, chain: list, dry_run: bool = False,
+                start_device: int = None) -> dict:
+    """Apply a chain and return a summary dict without exiting."""
+    results = []
+    exit_code = 0
+    aborted = False
+
+    if dry_run:
+        for i, device in enumerate(chain):
+            plugin_name = device.get("plugin_name", "")
+            parameters = device.get("parameters", {})
+            dev_idx = (start_device + i) if start_device is not None else i
+            r = load_and_configure_device(
+                track_index, plugin_name, parameters, dev_idx, dry_run=True)
+            results.append(r)
+            print()
+        return {
+            "results": results,
+            "exit_code": 0,
+            "aborted": False,
+            "final_devices": [],
+        }
+
+    if start_device is not None:
+        for i, device in enumerate(chain):
+            plugin_name = device.get("plugin_name", "")
+            parameters = device.get("parameters", {})
+            dev_idx = start_device + i
+            results.append(set_params_only(track_index, plugin_name, parameters, dev_idx))
+            print()
+        return {
+            "results": results,
+            "exit_code": 0,
+            "aborted": False,
+            "final_devices": [],
+        }
+
+    try:
+        initial_devices = _get_track_devices(track_index)
+    except RuntimeError as e:
+        print(f"[FAIL] Could not snapshot track devices: {e}")
+        return {
+            "results": results,
+            "exit_code": LOAD_FAILURE_EXIT_CODE,
+            "aborted": True,
+            "final_devices": [],
+        }
+
+    print(f"Existing devices on track: {len(initial_devices)}\n")
+
+    for device in chain:
+        plugin_name = device.get("plugin_name", "")
+        result = _empty_device_result(plugin_name)
+        print(f"  Loading '{plugin_name}'...", end=" ", flush=True)
+        try:
+            load_result = _load_device_verified(track_index, plugin_name)
+        except DuplicateDeviceError as e:
+            print("DUPLICATE")
+            _print_duplicate_error(e)
+            result["errors"].append(str(e))
+            results.append(result)
+            aborted = True
+            exit_code = DUPLICATE_DEVICE_EXIT_CODE
+            break
+        except RuntimeError as e:
+            print(f"FAILED ({e})")
+            result["errors"].append(str(e))
+            results.append(result)
+            aborted = True
+            exit_code = LOAD_FAILURE_EXIT_CODE
+            break
+
+        if not load_result.get("success"):
+            msg = load_result.get("message", "unknown error")
+            print(f"FAILED ({msg})")
+            result["errors"].append(f"Load failed: {msg}")
+            results.append(result)
+            aborted = True
+            exit_code = LOAD_FAILURE_EXIT_CODE
+            break
+
+        print("OK")
+        result["loaded"] = True
+        result["device_index"] = load_result.get("device_index")
+        results.append(result)
+        print(f"    Device chain now: {load_result.get('devices', [])}")
+        print()
+
+    if aborted:
+        return {
+            "results": results,
+            "exit_code": exit_code,
+            "aborted": True,
+            "final_devices": [],
+        }
+
+    final_devices = _get_track_devices(track_index)
+    expected_total = len(initial_devices) + len(chain)
+    if len(final_devices) != expected_total:
+        print(f"[FAIL] Chain verification failed: track has {len(final_devices)} devices, "
+              f"expected {expected_total}. Parameters were not set.")
+        return {
+            "results": results,
+            "exit_code": LOAD_FAILURE_EXIT_CODE,
+            "aborted": True,
+            "final_devices": final_devices,
+        }
+
+    for i, device in enumerate(chain):
+        plugin_name = device.get("plugin_name", "")
+        expected_index = len(initial_devices) + i
+        actual_name = final_devices[expected_index]
+        if plugin_name.lower() not in actual_name.lower():
+            print(f"[FAIL] Chain verification failed: expected '{plugin_name}' at "
+                  f"index {expected_index}, got '{actual_name}'. Parameters were not set.")
+            return {
+                "results": results,
+                "exit_code": LOAD_FAILURE_EXIT_CODE,
+                "aborted": True,
+                "final_devices": final_devices,
+            }
+
+    for i, device in enumerate(chain):
+        parameters = device.get("parameters", {})
+        if not parameters:
+            continue
+
+        plugin_name = device.get("plugin_name", "")
+        device_index = len(initial_devices) + i
+        param_result = set_params_only(track_index, plugin_name, parameters, device_index)
+        results[i]["params_set"] = param_result["params_set"]
+        results[i]["params_failed"] = param_result["params_failed"]
+        results[i]["param_details"] = param_result["param_details"]
+        results[i]["errors"].extend(param_result["errors"])
+        print()
+
+    return {
+        "results": results,
+        "exit_code": 0,
+        "aborted": False,
+        "final_devices": final_devices,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -383,43 +668,17 @@ def main():
         print("[DRY-RUN MODE] No changes will be made.\n")
 
     # Apply chain
-    results = []
-    total_params_set = 0
-    total_params_failed = 0
-    total_loaded = 0
-    total_load_failed = 0
-
-    # Get current device count to calculate device indices
-    if not args.dry_run and args.device is None:
-        dev_count_result = _execute("get_num_devices", {"track_index": args.track})
-        existing_devices = dev_count_result.get("count", 0) if dev_count_result.get("success") else 0
-        print(f"Existing devices on track: {existing_devices}\n")
-    else:
-        existing_devices = 0
-
-    for i, device in enumerate(chain):
-        plugin_name = device.get("plugin_name", "")
-        parameters = device.get("parameters", {})
-
-        # Calculate the device index: existing devices + position in our chain
-        if args.device is not None:
-            # User specified starting device index — set params only
-            dev_idx = args.device + i
-            r = set_params_only(args.track, plugin_name, parameters, dev_idx)
-        else:
-            dev_idx = existing_devices + i
-            r = load_and_configure_device(
-                args.track, plugin_name, parameters, dev_idx,
-                dry_run=args.dry_run)
-
-        results.append(r)
-        if r["loaded"]:
-            total_loaded += 1
-        else:
-            total_load_failed += 1
-        total_params_set += r["params_set"]
-        total_params_failed += r["params_failed"]
-        print()
+    apply_result = apply_chain(
+        track_index=args.track,
+        chain=chain,
+        dry_run=args.dry_run,
+        start_device=args.device,
+    )
+    results = apply_result["results"]
+    total_loaded = sum(1 for r in results if r["loaded"])
+    total_load_failed = len(chain) - total_loaded
+    total_params_set = sum(r["params_set"] for r in results)
+    total_params_failed = sum(r["params_failed"] for r in results)
 
     # Summary
     print("=" * 60)
@@ -461,6 +720,8 @@ def main():
     print(f"\nReport: {report_path}")
 
     all_ok = total_load_failed == 0 and total_params_failed == 0
+    if apply_result.get("exit_code"):
+        sys.exit(apply_result["exit_code"])
     sys.exit(0 if all_ok else 1)
 
 

@@ -33,6 +33,17 @@ python scripts/remember_chain.py --track 0 --style cla_modern_pop --note "less c
 The next `apply_vocal_preset.py --style ...` run loads the committed template,
 then applies your saved overrides on top.
 
+## Tuning Timeouts
+
+Waves plugins can take several seconds to load the first time Ableton scans them
+in a session. `apply_vocal_preset.py` verifies each device by polling the track's
+device count before it moves on to the next plugin. The default device-load
+timeout is 30 seconds. To make cold loads wait longer, set:
+
+```powershell
+$env:LIVE_PILOT_DEVICE_LOAD_TIMEOUT_SEC = "45"
+```
+
 ## Preferences
 
 Preferences live in `preferences/vocal_chain_<style>.json`. These files are

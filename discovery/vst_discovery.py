@@ -742,7 +742,9 @@ class VSTDiscoveryService:
             self._load_cache()
         return list(self._plugins_by_category.keys())
     
-    def load_device_on_track(self, track_index: int, device_name: str, position: int = -1) -> Dict:
+    def load_device_on_track(self, track_index: int, device_name: str,
+                             position: int = -1,
+                             timeout: Optional[float] = None) -> Dict:
         """
         Load a device onto a track via OSC
         
@@ -750,6 +752,7 @@ class VSTDiscoveryService:
             track_index: 0-based track index
             device_name: Name of device to load
             position: Position in device chain (-1 = end)
+            timeout: Optional response timeout in seconds
             
         Returns:
             Result dict with success status and message
@@ -763,11 +766,16 @@ class VSTDiscoveryService:
                 print(f"[VSTDiscovery] Auto-resolved '{device_name}' to '{resolved_plugin.name}'")
             final_name = resolved_plugin.name
             
-        # Keep request timeout short; reliable_params verifies by device count after send.
+        if timeout is None:
+            try:
+                timeout = float(os.environ.get("LIVE_PILOT_DEVICE_LOAD_TIMEOUT_SEC", "30"))
+            except ValueError:
+                timeout = 30.0
+
         response = self._send_osc_request(
             "/jarvis/device/load",
             [track_index, final_name, position],
-            timeout=2.5,
+            timeout=timeout,
             max_retries=1,
         )
         
