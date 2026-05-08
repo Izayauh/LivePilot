@@ -1742,7 +1742,7 @@ class AbletonController:
     # ==================== DEVICE LOADING (via JarvisDeviceLoader) ====================
     # These methods communicate with the JarvisDeviceLoader Remote Script on port 11002
     
-    def load_device(self, track_index, device_name, position=-1):
+    def load_device(self, track_index, device_name, position=-1, timeout=None):
         """
         Load a device/plugin onto a track
         
@@ -1753,6 +1753,7 @@ class AbletonController:
             track_index: Track index (0-based, so Track 1 = 0)
             device_name: Name of the device to load (e.g., "EQ Eight", "FabFilter Pro-Q 3")
             position: Position in device chain (-1 = end, 0 = first)
+            timeout: Optional JarvisDeviceLoader response timeout in seconds
             
         Returns:
             dict: {"success": bool, "message": str}
@@ -1760,7 +1761,7 @@ class AbletonController:
         try:
             from discovery.vst_discovery import get_vst_discovery
             discovery = get_vst_discovery()
-            result = discovery.load_device_on_track(track_index, device_name, position)
+            result = discovery.load_device_on_track(track_index, device_name, position, timeout=timeout)
             return result
         except ImportError:
             # Fallback to direct OSC if vst_discovery not available

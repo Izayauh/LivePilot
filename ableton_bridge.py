@@ -485,7 +485,8 @@ def _build_dispatch(args: dict):
 
         # -- Plugin management --
         "add_plugin_to_track": lambda: ableton.load_device(
-            track_index, args.get("plugin_name"), _to_int(args.get("position", -1))),
+            track_index, args.get("plugin_name"), _to_int(args.get("position", -1)),
+            float(args.get("timeout", 0) or 0) or None),
         "get_available_plugins": lambda: ableton.get_available_plugins(args.get("category")),
         "find_plugin":         lambda: ableton.find_plugin(
             args.get("query"), args.get("category")),
