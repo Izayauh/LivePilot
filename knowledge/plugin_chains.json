@@ -777,7 +777,10 @@
           "type": "cleanup",
           "purpose": "cleanup pre-pass",
           "plugin_suggestions": [
+            "Clarity Vx Stereo",
+            "Clarity Vx Mono",
             "Clarity Vx",
+            "Clarity Vx Pro Stereo",
             "Clarity Vx Pro"
           ]
         },
@@ -785,7 +788,10 @@
           "type": "de-esser",
           "purpose": "adaptive de-ess",
           "plugin_suggestions": [
+            "Sibilance Stereo",
+            "Sibilance Mono",
             "Sibilance",
+            "DeEsser Stereo",
             "DeEsser"
           ]
         },
@@ -793,6 +799,8 @@
           "type": "channel_strip",
           "purpose": "main curated chain",
           "plugin_suggestions": [
+            "CLA Vocals Stereo",
+            "CLA Vocals Mono",
             "CLA Vocals"
           ],
           "settings": {
@@ -801,13 +809,15 @@
             "Compress": 0.5,
             "Reverb": 0.3,
             "Delay": 0.2,
-            "PitchFix": 0.0
+            "Pitch": 0.0
           }
         },
         {
           "type": "leveler",
           "purpose": "level automation",
           "plugin_suggestions": [
+            "Vocal Rider Stereo",
+            "Vocal Rider Mono",
             "Vocal Rider"
           ]
         },
@@ -815,11 +825,13 @@
           "type": "exciter",
           "purpose": "top-end air",
           "plugin_suggestions": [
+            "Aphex Vintage Exciter Stereo",
+            "Aphex Vintage Exciter Mono",
             "Aphex Vintage Aural Exciter"
           ],
           "settings": {
-            "Drive": 0.3,
-            "Mix": 0.2
+            "Input": 0.3,
+            "AX Mix": 0.2
           }
         }
       ]
@@ -832,7 +844,10 @@
           "type": "cleanup",
           "purpose": "cleanup pre-pass",
           "plugin_suggestions": [
+            "Clarity Vx Stereo",
+            "Clarity Vx Mono",
             "Clarity Vx",
+            "Clarity Vx Pro Stereo",
             "Clarity Vx Pro"
           ]
         },
@@ -840,7 +855,10 @@
           "type": "de-esser",
           "purpose": "adaptive de-ess",
           "plugin_suggestions": [
+            "Sibilance Stereo",
+            "Sibilance Mono",
             "Sibilance",
+            "DeEsser Stereo",
             "DeEsser"
           ]
         },
@@ -848,6 +866,8 @@
           "type": "channel_strip",
           "purpose": "main curated chain",
           "plugin_suggestions": [
+            "Greg Wells VoiceCentric Stereo",
+            "Greg Wells VoiceCentric Mono",
             "Greg Wells VoiceCentric"
           ],
           "settings": {
@@ -860,6 +880,8 @@
           "type": "leveler",
           "purpose": "level automation",
           "plugin_suggestions": [
+            "Vocal Rider Stereo",
+            "Vocal Rider Mono",
             "Vocal Rider"
           ]
         },
@@ -867,7 +889,10 @@
           "type": "reverb",
           "purpose": "send space",
           "plugin_suggestions": [
+            "H-Reverb Stereo",
+            "H-Reverb Mono",
             "H-Reverb",
+            "RVerb Stereo",
             "RVerb"
           ],
           "send": true,
@@ -887,7 +912,10 @@
           "type": "cleanup",
           "purpose": "cleanup pre-pass",
           "plugin_suggestions": [
+            "Clarity Vx Stereo",
+            "Clarity Vx Mono",
             "Clarity Vx",
+            "Clarity Vx Pro Stereo",
             "Clarity Vx Pro"
           ]
         },
@@ -895,7 +923,10 @@
           "type": "de-esser",
           "purpose": "adaptive de-ess",
           "plugin_suggestions": [
+            "Sibilance Stereo",
+            "Sibilance Mono",
             "Sibilance",
+            "DeEsser Stereo",
             "DeEsser"
           ]
         },
@@ -903,6 +934,8 @@
           "type": "channel_strip",
           "purpose": "main curated chain",
           "plugin_suggestions": [
+            "Eddie Kramer Vocal Channel Stereo",
+            "Eddie Kramer Vocal Channel Mono",
             "Eddie Kramer Vocal Channel"
           ],
           "settings": {
@@ -916,6 +949,8 @@
           "type": "leveler",
           "purpose": "level automation",
           "plugin_suggestions": [
+            "Vocal Rider Stereo",
+            "Vocal Rider Mono",
             "Vocal Rider"
           ]
         },
@@ -923,6 +958,8 @@
           "type": "delay_reverb",
           "purpose": "send ambience",
           "plugin_suggestions": [
+            "CLA EPIC Stereo",
+            "CLA EPIC Mono",
             "CLA EPIC"
           ],
           "send": true,
@@ -942,7 +979,10 @@
           "type": "cleanup",
           "purpose": "cleanup pre-pass",
           "plugin_suggestions": [
+            "Clarity Vx Stereo",
+            "Clarity Vx Mono",
             "Clarity Vx",
+            "Clarity Vx Pro Stereo",
             "Clarity Vx Pro"
           ]
         },
@@ -950,7 +990,10 @@
           "type": "de-esser",
           "purpose": "adaptive de-ess",
           "plugin_suggestions": [
+            "Sibilance Stereo",
+            "Sibilance Mono",
             "Sibilance",
+            "DeEsser Stereo",
             "DeEsser"
           ]
         },
@@ -958,7 +1001,10 @@
           "type": "compressor",
           "purpose": "transparent vocal control",
           "plugin_suggestions": [
+            "Renaissance Vox Stereo",
+            "Renaissance Vox Mono",
             "Renaissance Vox",
+            "RVox Stereo",
             "RVox"
           ]
         },
@@ -966,6 +1012,8 @@
           "type": "leveler",
           "purpose": "level automation",
           "plugin_suggestions": [
+            "Vocal Rider Stereo",
+            "Vocal Rider Mono",
             "Vocal Rider"
           ]
         },
@@ -973,7 +1021,10 @@
           "type": "reverb",
           "purpose": "small room",
           "plugin_suggestions": [
+            "TrueVerb Stereo",
+            "TrueVerb Mono",
             "TrueVerb",
+            "RVerb Stereo",
             "RVerb"
           ],
           "settings": {
