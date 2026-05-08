@@ -6,6 +6,7 @@ from context.session_manager import SessionManager
 from librarian.session_context import LibrarianSessionContext
 from livepilot_tools.context_tools import (
     analyze_clip_context,
+    analyze_rhythm_context,
     get_creative_context,
     get_project_intent,
     plan_arrangement_move,
@@ -50,6 +51,53 @@ class FakeMidiClipController(FakeController):
                 {"pitch": 67, "start": 2.5, "duration": 1.5, "velocity": 90},
             ],
         }
+
+
+class FakeCleanHalfTimeDrumController(FakeController):
+    def get_clip_info(self, track_index, clip_index):
+        return {"success": True, "clip": {"name": "Half Time Drums", "length_beats": 4.0}}
+
+    def get_clip_notes(self, track_index, clip_index):
+        return {
+            "success": True,
+            "notes": [
+                {"pitch": 36, "start": 0.0, "duration": 0.125, "velocity": 105, "name": "Kick"},
+                {"pitch": 42, "start": 0.0, "duration": 0.125, "velocity": 72, "name": "Closed Hat"},
+                {"pitch": 42, "start": 1.0, "duration": 0.125, "velocity": 70, "name": "Closed Hat"},
+                {"pitch": 38, "start": 2.0, "duration": 0.125, "velocity": 108, "name": "Snare"},
+                {"pitch": 42, "start": 2.0, "duration": 0.125, "velocity": 74, "name": "Closed Hat"},
+                {"pitch": 42, "start": 3.0, "duration": 0.125, "velocity": 68, "name": "Closed Hat"},
+            ],
+        }
+
+
+class FakeOffGridDrumController(FakeController):
+    def get_clip_info(self, track_index, clip_index):
+        return {"success": True, "clip": {"name": "Loose Drums", "length_beats": 4.0}}
+
+    def get_clip_notes(self, track_index, clip_index):
+        return {
+            "success": True,
+            "notes": [
+                {"pitch": 36, "start": 0.12, "duration": 0.125, "velocity": 100},
+                {"pitch": 42, "start": 1.13, "duration": 0.125, "velocity": 70},
+                {"pitch": 38, "start": 2.19, "duration": 0.125, "velocity": 105},
+                {"pitch": 42, "start": 3.31, "duration": 0.125, "velocity": 75},
+            ],
+        }
+
+
+class FakeBusyDrumController(FakeController):
+    def get_clip_info(self, track_index, clip_index):
+        return {"success": True, "clip": {"name": "Busy Hats", "length_beats": 4.0}}
+
+    def get_clip_notes(self, track_index, clip_index):
+        notes = []
+        for index in range(16):
+            notes.append({"pitch": 42, "start": index * 0.25, "duration": 0.0625, "velocity": 68})
+        for start in (0.5, 1.5, 2.5, 3.5, 0.75, 1.75):
+            notes.append({"pitch": 46, "start": start, "duration": 0.0625, "velocity": 64})
+        return {"success": True, "notes": notes}
 
 
 class CreativeContextTests(unittest.TestCase):
@@ -144,6 +192,76 @@ class CreativeContextTests(unittest.TestCase):
         self.assertIn("density_notes_per_beat", result["missing_fields"])
         self.assertIn("Current controller exposes no MIDI note reader for clips.", result["limitations"])
 
+    def test_analyze_rhythm_context_clean_sparse_half_time_drum_pattern(self):
+        result = analyze_rhythm_context(
+            track_index=2,
+            clip_index=0,
+            role="drums",
+            controller=FakeCleanHalfTimeDrumController(),
+        )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["track_index"], 2)
+        self.assertEqual(result["clip_index"], 0)
+        self.assertEqual(result["role"], "drums")
+        self.assertEqual(result["clip_length_beats"], 4.0)
+        self.assertEqual(result["note_count"], 6)
+        self.assertEqual(result["likely_resolution"], "1/4")
+        self.assertEqual(result["average_grid_error"], 0.0)
+        self.assertEqual(result["max_grid_error"], 0.0)
+        self.assertEqual(result["density_by_bar"][0]["note_count"], 6)
+        self.assertEqual(result["downbeat_hits"]["count"], 2)
+        self.assertEqual(result["backbeat_hits"]["half_time_candidate_count"], 2)
+        self.assertEqual(result["drum_interpretation"]["family_counts"]["kick"], 1)
+        self.assertEqual(result["drum_interpretation"]["family_counts"]["snare"], 1)
+        self.assertTrue(any("tightly quantized" in warning for warning in result["warnings"]))
+
+    def test_analyze_rhythm_context_obviously_off_grid_pattern(self):
+        result = analyze_rhythm_context(
+            track_index=2,
+            clip_index=0,
+            role="drums",
+            controller=FakeOffGridDrumController(),
+        )
+
+        self.assertTrue(result["success"])
+        self.assertIsNone(result["likely_resolution"])
+        self.assertGreater(result["average_grid_error"], 0.05)
+        self.assertGreater(result["max_grid_error"], 0.1)
+        self.assertEqual(len(result["off_grid_notes"]), 4)
+        self.assertTrue(any("inconsistently off grid" in warning for warning in result["warnings"]))
+        self.assertTrue(any("No stable grid resolution" in warning for warning in result["warnings"]))
+
+    def test_analyze_rhythm_context_busy_hat_percussion_pattern(self):
+        result = analyze_rhythm_context(
+            track_index=2,
+            clip_index=0,
+            role="drums",
+            controller=FakeBusyDrumController(),
+        )
+
+        self.assertTrue(result["success"])
+        self.assertEqual(result["note_count"], 22)
+        self.assertEqual(result["likely_resolution"], "1/16")
+        self.assertEqual(result["density_by_bar"][0]["note_count"], 22)
+        self.assertEqual(result["drum_interpretation"]["family_counts"]["hat"], 22)
+        self.assertGreater(len(result["syncopation_notes"]), 0)
+        self.assertTrue(any("density is high" in warning for warning in result["warnings"]))
+
+    def test_analyze_rhythm_context_reports_missing_midi_note_reader(self):
+        result = analyze_rhythm_context(
+            track_index=0,
+            clip_index=0,
+            role="drums",
+            controller=FakeController(),
+        )
+
+        self.assertTrue(result["success"])
+        self.assertIsNone(result["note_count"])
+        self.assertIn("notes_by_beat", result["missing_fields"])
+        self.assertIn("Current controller exposes no MIDI note reader for clips.", result["limitations"])
+        self.assertTrue(any("no readable MIDI note list" in warning for warning in result["warnings"]))
+
     def test_creative_context_includes_selected_clip_context(self):
         manager = SessionManager()
         manager.state.selected_track = 0
@@ -160,6 +278,10 @@ class CreativeContextTests(unittest.TestCase):
         self.assertEqual(context["selected_clip"]["clip_index"], 1)
         self.assertEqual(context["selected_clip"]["note_count"], 3)
         self.assertEqual(context["selected_clip"]["pitch_range"], 7)
+        self.assertEqual(context["selected_rhythm"]["track_index"], 0)
+        self.assertEqual(context["selected_rhythm"]["clip_index"], 1)
+        self.assertEqual(context["selected_rhythm"]["note_count"], 3)
+        self.assertEqual(context["rhythm_context"]["note_count"], 3)
 
     def test_plan_arrangement_move_returns_valid_reviewable_schema(self):
         manager = SessionManager()

@@ -2,6 +2,7 @@
 
 from .context_tools import (
     analyze_clip_context,
+    analyze_rhythm_context,
     get_creative_context,
     get_project_intent,
     plan_arrangement_move,
@@ -11,6 +12,7 @@ from .context_tools import (
 
 __all__ = [
     "analyze_clip_context",
+    "analyze_rhythm_context",
     "get_creative_context",
     "get_project_intent",
     "plan_arrangement_move",

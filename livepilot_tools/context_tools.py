@@ -18,6 +18,24 @@ from librarian.session_context import get_librarian_session_context
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROJECT_INTENT_PATH = _REPO_ROOT / "data" / "project_intent.json"
+BEATS_PER_BAR = 4
+GRID_ERROR_TOLERANCE = 0.035
+MECHANICAL_GRID_TOLERANCE = 0.006
+BUSY_DRUM_NOTES_PER_BAR = 16
+GRID_CANDIDATES: Tuple[Tuple[str, float], ...] = (
+    ("1/4", 1.0),
+    ("1/8", 0.5),
+    ("1/16", 0.25),
+    ("triplet", 1.0 / 3.0),
+)
+DRUM_PITCH_FAMILIES = {
+    "kick": {35, 36},
+    "snare": {38, 40},
+    "clap": {39},
+    "hat": {42, 44, 46},
+    "tom": {41, 43, 45, 47, 48, 50},
+    "cymbal": {49, 51, 52, 55, 57, 59},
+}
 PROJECT_INTENT_FIELDS = (
     "genre",
     "references",
@@ -162,6 +180,7 @@ def get_creative_context(
     tracks = _build_tracks_summary(session_state, live_snapshot, missing_fields)
     selected = _build_selected_context(session_state, tracks, missing_fields)
     selected_clip = _build_selected_clip_context(selected, controller, reliable, missing_fields, limitations)
+    selected_rhythm = _build_selected_rhythm_context(selected, controller, reliable, missing_fields, limitations)
     librarian_active = _build_librarian_context(librarian, missing_fields)
     project_intent = get_project_intent(project_intent_path)
     if not project_intent.get("exists"):
@@ -174,6 +193,8 @@ def get_creative_context(
         "tracks": tracks,
         "selected": selected,
         "selected_clip": selected_clip,
+        "selected_rhythm": selected_rhythm,
+        "rhythm_context": selected_rhythm,
         "active_librarian": librarian_active,
         "project_intent": project_intent.get("project_intent", _empty_project_intent()),
         "recent_actions": recent_actions,
@@ -188,7 +209,7 @@ def get_creative_context(
             ),
         },
         "known_limitations": {
-            "limitations": limitations,
+            "limitations": sorted(set(limitations)),
             "missing_fields": sorted(set(missing_fields)),
         },
         "generated_at": datetime.now().isoformat(),
@@ -315,6 +336,180 @@ def analyze_clip_context(
     return _json_safe(summary)
 
 
+def analyze_rhythm_context(
+    track_index: int,
+    clip_index: int,
+    role: Optional[str] = None,
+    controller: Any = None,
+    reliable: Any = None,
+) -> Dict[str, Any]:
+    """Return MIDI-only timing alignment context for one Session clip.
+
+    This does not listen to audio and does not judge whether a part sounds good.
+    It only inspects accessible MIDI note starts against simple beat grids.
+    """
+    _ = reliable
+    normalized_role = _normalize_role(role)
+    try:
+        track_index = int(track_index)
+        clip_index = int(clip_index)
+    except (TypeError, ValueError):
+        return {
+            "success": False,
+            "message": "track_index and clip_index must be integers",
+            "track_index": track_index,
+            "clip_index": clip_index,
+            "role": normalized_role,
+            "clip_length_beats": None,
+            "note_count": None,
+            "notes_by_beat": None,
+            "detected_grid_positions": None,
+            "off_grid_notes": None,
+            "average_grid_error": None,
+            "max_grid_error": None,
+            "likely_resolution": None,
+            "density_by_bar": None,
+            "downbeat_hits": None,
+            "backbeat_hits": None,
+            "syncopation_notes": None,
+            "warnings": ["Invalid clip address; no Ableton query attempted."],
+            "missing_fields": ["track_index", "clip_index"],
+            "limitations": ["Invalid clip address; no Ableton query attempted."],
+        }
+
+    summary = _empty_rhythm_context(track_index, clip_index, normalized_role)
+    missing_fields: List[str] = summary["missing_fields"]
+    limitations: List[str] = summary["limitations"]
+    warnings: List[str] = summary["warnings"]
+
+    if track_index < 0 or clip_index < 0:
+        summary["success"] = False
+        summary["message"] = "track_index and clip_index must be zero-based non-negative integers"
+        warnings.append("Invalid clip address; no Ableton query attempted.")
+        limitations.append("Invalid clip address; no Ableton query attempted.")
+        missing_fields.extend(_rhythm_context_value_fields())
+        return _finalize_rhythm_context(summary)
+
+    if controller is None:
+        warnings.append("No Ableton controller supplied; MIDI rhythm fields are unavailable.")
+        limitations.append("No Ableton controller supplied; MIDI rhythm fields are unavailable.")
+        missing_fields.extend(_rhythm_context_value_fields())
+        return _finalize_rhythm_context(summary)
+
+    clip_payload = _read_clip_metadata(controller, track_index, clip_index, limitations)
+    clip_length = _float_or_none(
+        _coalesce(
+            clip_payload.get("clip_length_beats"),
+            clip_payload.get("length_beats"),
+            clip_payload.get("length"),
+            clip_payload.get("duration_beats"),
+            clip_payload.get("duration"),
+        )
+    )
+    summary["clip_length_beats"] = clip_length
+
+    notes_result = _read_clip_notes(controller, track_index, clip_index, limitations)
+    raw_notes = notes_result.get("notes")
+    note_count_hint = _int_or_none(_coalesce(notes_result.get("note_count"), notes_result.get("count")))
+    if raw_notes is None:
+        if note_count_hint is not None:
+            summary["note_count"] = note_count_hint
+        warnings.append("Clip has no readable MIDI note list for rhythm analysis.")
+        missing_fields.extend(
+            [
+                "notes_by_beat",
+                "detected_grid_positions",
+                "off_grid_notes",
+                "average_grid_error",
+                "max_grid_error",
+                "likely_resolution",
+                "density_by_bar",
+                "downbeat_hits",
+                "backbeat_hits",
+                "syncopation_notes",
+            ]
+        )
+        return _finalize_rhythm_context(summary)
+
+    notes = [_normalize_note(note) for note in raw_notes]
+    summary["note_count"] = len(notes)
+    if clip_length is None:
+        starts = [note["start"] for note in notes if note.get("start") is not None]
+        ends = [note["end"] for note in notes if note.get("end") is not None]
+        inferred_length = max(starts + ends) if starts or ends else None
+        summary["clip_length_beats"] = inferred_length
+        if inferred_length is None:
+            missing_fields.append("clip_length_beats")
+
+    starts = [note["start"] for note in notes if note.get("start") is not None]
+    if not notes:
+        warnings.append("Clip has readable MIDI notes, but the note list is empty.")
+        limitations.append("No MIDI note starts are available to analyze rhythmic alignment.")
+        missing_fields.extend(
+            [
+                "notes_by_beat",
+                "detected_grid_positions",
+                "off_grid_notes",
+                "average_grid_error",
+                "max_grid_error",
+                "likely_resolution",
+                "density_by_bar",
+                "downbeat_hits",
+                "backbeat_hits",
+                "syncopation_notes",
+            ]
+        )
+        return _finalize_rhythm_context(summary)
+    if not starts:
+        warnings.append("MIDI notes were readable, but none exposed start positions.")
+        missing_fields.extend(
+            [
+                "notes_by_beat",
+                "detected_grid_positions",
+                "off_grid_notes",
+                "average_grid_error",
+                "max_grid_error",
+                "likely_resolution",
+                "density_by_bar",
+                "downbeat_hits",
+                "backbeat_hits",
+                "syncopation_notes",
+            ]
+        )
+        return _finalize_rhythm_context(summary)
+
+    grid = _detect_grid(starts)
+    likely_resolution = grid.get("label")
+    interval = (grid.get("interval") if likely_resolution else None) or 0.25
+    errors = [_grid_error(start, interval) for start in starts]
+    average_error = sum(errors) / len(errors)
+    max_error = max(errors)
+    enriched_notes = [_rhythm_note_payload(note, interval) for note in notes if note.get("start") is not None]
+
+    summary["likely_resolution"] = likely_resolution
+    summary["average_grid_error"] = round(average_error, 6)
+    summary["max_grid_error"] = round(max_error, 6)
+    summary["notes_by_beat"] = _notes_by_beat(enriched_notes)
+    summary["detected_grid_positions"] = _detected_grid_positions(enriched_notes)
+    summary["off_grid_notes"] = [
+        note for note in enriched_notes if note["grid_error"] > GRID_ERROR_TOLERANCE
+    ]
+    summary["density_by_bar"] = _density_by_bar(enriched_notes, summary.get("clip_length_beats"))
+    summary["downbeat_hits"] = _downbeat_hits(enriched_notes)
+    summary["backbeat_hits"] = _backbeat_hits(enriched_notes)
+    summary["syncopation_notes"] = _syncopation_notes(enriched_notes)
+
+    if normalized_role == "drums":
+        summary["drum_interpretation"] = _drum_interpretation(enriched_notes, summary["density_by_bar"])
+        warnings.extend(_drum_rhythm_warnings(summary))
+
+    warnings.extend(_grid_alignment_warnings(enriched_notes, likely_resolution, average_error, max_error))
+    if likely_resolution is None:
+        warnings.append("No stable grid resolution was detected from MIDI note starts.")
+
+    return _finalize_rhythm_context(summary)
+
+
 def plan_arrangement_move(
     goal: str,
     target_section: Optional[str] = None,
@@ -432,6 +627,7 @@ def _arrangement_context_summary(context: Dict[str, Any]) -> Dict[str, Any]:
     tracks = context.get("tracks") or {}
     selected = context.get("selected") or {}
     selected_clip = context.get("selected_clip") or {}
+    selected_rhythm = context.get("selected_rhythm") or {}
     project_intent = context.get("project_intent") or {}
     active_librarian = context.get("active_librarian") or {}
     project = context.get("project") or {}
@@ -451,6 +647,20 @@ def _arrangement_context_summary(context: Dict[str, Any]) -> Dict[str, Any]:
             "note_count": selected_clip.get("note_count"),
             "pitch_range": selected_clip.get("pitch_range"),
             "missing_fields": selected_clip.get("missing_fields", []),
+        },
+        "selected_rhythm": {
+            "track_index": selected_rhythm.get("track_index"),
+            "clip_index": selected_rhythm.get("clip_index"),
+            "role": selected_rhythm.get("role"),
+            "likely_resolution": selected_rhythm.get("likely_resolution"),
+            "average_grid_error": selected_rhythm.get("average_grid_error"),
+            "max_grid_error": selected_rhythm.get("max_grid_error"),
+            "note_count": selected_rhythm.get("note_count"),
+            "density_by_bar": selected_rhythm.get("density_by_bar"),
+            "downbeat_hits": selected_rhythm.get("downbeat_hits"),
+            "backbeat_hits": selected_rhythm.get("backbeat_hits"),
+            "warnings": selected_rhythm.get("warnings", []),
+            "missing_fields": selected_rhythm.get("missing_fields", []),
         },
         "project": {
             "name": project.get("name"),
@@ -579,6 +789,13 @@ def _arrangement_warnings(goal: str, context: Dict[str, Any]) -> List[str]:
     selected_missing = selected_clip.get("missing_fields") or []
     if selected_missing:
         warnings.append(f"Selected clip is missing MIDI data fields: {', '.join(selected_missing)}")
+
+    selected_rhythm = context.get("selected_rhythm") or {}
+    rhythm_missing = selected_rhythm.get("missing_fields") or []
+    if rhythm_missing:
+        warnings.append(f"Selected rhythm context is missing MIDI timing fields: {', '.join(rhythm_missing)}")
+    for rhythm_warning in selected_rhythm.get("warnings") or []:
+        warnings.append(f"Selected rhythm context: {rhythm_warning}")
 
     if _goal_requires_human_review(goal):
         warnings.append("Goal appears to require listening judgment; human review is required.")
@@ -778,6 +995,45 @@ def _build_selected_clip_context(
     return clip_context
 
 
+def _build_selected_rhythm_context(
+    selected: Dict[str, Any],
+    controller: Any,
+    reliable: Any,
+    missing_fields: List[str],
+    limitations: List[str],
+) -> Dict[str, Any]:
+    track_index = selected.get("track_index")
+    clip_index = selected.get("scene_index")
+    if track_index is None or clip_index is None:
+        missing = []
+        if track_index is None:
+            missing.append("track_index")
+        if clip_index is None:
+            missing.append("clip_index")
+        missing_fields.append("selected_rhythm")
+        return {
+            "success": False,
+            "track_index": track_index,
+            "clip_index": clip_index,
+            "role": None,
+            "limitations": ["Selected track or clip slot is not available from current session state."],
+            "missing_fields": missing,
+        }
+
+    role = _infer_role_from_selected_track(selected)
+    rhythm_context = analyze_rhythm_context(
+        track_index=track_index,
+        clip_index=clip_index,
+        role=role,
+        controller=controller,
+        reliable=reliable,
+    )
+    for field in rhythm_context.get("missing_fields", []):
+        missing_fields.append(f"selected_rhythm.{field}")
+    limitations.extend(rhythm_context.get("limitations", []))
+    return rhythm_context
+
+
 def _build_librarian_context(librarian: Any, missing_fields: List[str]) -> Dict[str, Any]:
     active = librarian.get_active() if librarian and hasattr(librarian, "get_active") else None
     if not active:
@@ -885,6 +1141,340 @@ def _clip_context_value_fields() -> List[str]:
         "note_end_max",
         "density_notes_per_beat",
     ]
+
+
+def _empty_rhythm_context(track_index: int, clip_index: int, role: Optional[str]) -> Dict[str, Any]:
+    return {
+        "success": True,
+        "track_index": track_index,
+        "clip_index": clip_index,
+        "role": role,
+        "clip_length_beats": None,
+        "note_count": None,
+        "notes_by_beat": None,
+        "detected_grid_positions": None,
+        "off_grid_notes": None,
+        "average_grid_error": None,
+        "max_grid_error": None,
+        "likely_resolution": None,
+        "density_by_bar": None,
+        "downbeat_hits": None,
+        "backbeat_hits": None,
+        "syncopation_notes": None,
+        "warnings": [],
+        "missing_fields": [],
+        "limitations": [
+            "MIDI-only analysis; no audio listening, transient detection, swing extraction, or groove feel judgment.",
+            "Assumes 4/4 bar grouping for downbeat, backbeat, and density summaries.",
+        ],
+    }
+
+
+def _rhythm_context_value_fields() -> List[str]:
+    return [
+        "clip_length_beats",
+        "note_count",
+        "notes_by_beat",
+        "detected_grid_positions",
+        "off_grid_notes",
+        "average_grid_error",
+        "max_grid_error",
+        "likely_resolution",
+        "density_by_bar",
+        "downbeat_hits",
+        "backbeat_hits",
+        "syncopation_notes",
+    ]
+
+
+def _finalize_rhythm_context(summary: Dict[str, Any]) -> Dict[str, Any]:
+    if summary.get("clip_length_beats") is None:
+        summary["missing_fields"].append("clip_length_beats")
+    if summary.get("note_count") is None:
+        summary["missing_fields"].append("note_count")
+    summary["missing_fields"] = sorted(set(summary.get("missing_fields", [])))
+    summary["limitations"] = sorted(set(summary.get("limitations", [])))
+    summary["warnings"] = sorted(set(summary.get("warnings", [])))
+    return _json_safe(summary)
+
+
+def _normalize_role(role: Optional[str]) -> Optional[str]:
+    if role is None:
+        return None
+    normalized = str(role).strip().lower()
+    return normalized or None
+
+
+def _infer_role_from_selected_track(selected: Dict[str, Any]) -> Optional[str]:
+    track = selected.get("track")
+    name = (track or {}).get("name") if isinstance(track, dict) else None
+    if not name:
+        return None
+    lowered = str(name).lower()
+    if any(term in lowered for term in ("drum", "kit", "beat", "perc", "percussion")):
+        return "drums"
+    if "kick" in lowered or "808" in lowered:
+        return "kick"
+    if "snare" in lowered or "clap" in lowered:
+        return "snare"
+    if "hat" in lowered or "hihat" in lowered or "hi-hat" in lowered:
+        return "hats"
+    if "bass" in lowered:
+        return "bass"
+    return None
+
+
+def _detect_grid(starts: List[float]) -> Dict[str, Any]:
+    best: Dict[str, Any] = {"label": None, "interval": 0.25, "average_error": None, "aligned_ratio": 0.0}
+    best_score = None
+    for label, interval in GRID_CANDIDATES:
+        errors = [_grid_error(start, interval) for start in starts]
+        average_error = sum(errors) / len(errors)
+        max_error = max(errors)
+        aligned_ratio = len([error for error in errors if error <= GRID_ERROR_TOLERANCE]) / len(errors)
+        score = average_error + (1.0 - aligned_ratio) * 0.08 - interval * 0.001
+        if best_score is None or score < best_score:
+            best_score = score
+            best = {
+                "label": label if aligned_ratio >= 0.65 and average_error <= 0.06 else None,
+                "interval": interval,
+                "average_error": average_error,
+                "max_error": max_error,
+                "aligned_ratio": aligned_ratio,
+            }
+    return best
+
+
+def _grid_error(start: float, interval: float) -> float:
+    if interval <= 0:
+        return 0.0
+    nearest = round(start / interval) * interval
+    return abs(start - nearest)
+
+
+def _nearest_grid(start: float, interval: float) -> float:
+    if interval <= 0:
+        return start
+    return round(round(start / interval) * interval, 6)
+
+
+def _rhythm_note_payload(note: Dict[str, Any], interval: float) -> Dict[str, Any]:
+    start = note.get("start")
+    nearest = _nearest_grid(start, interval) if start is not None else None
+    error = _grid_error(start, interval) if start is not None else None
+    payload = {
+        "pitch": note.get("pitch"),
+        "name": note.get("name"),
+        "start_beat": round(start, 6) if start is not None else None,
+        "nearest_grid": nearest,
+        "grid_error": round(error, 6) if error is not None else None,
+        "velocity": note.get("velocity"),
+    }
+    family = _drum_family(note.get("pitch"), note.get("name"))
+    if family:
+        payload["likely_drum_family"] = family
+    return payload
+
+
+def _notes_by_beat(notes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    buckets: Dict[int, List[Dict[str, Any]]] = {}
+    for note in notes:
+        start = note.get("start_beat")
+        if start is None:
+            continue
+        beat = int(start)
+        buckets.setdefault(beat, []).append(note)
+    return [
+        {
+            "beat": beat,
+            "count": len(items),
+            "pitches": sorted({item.get("pitch") for item in items if item.get("pitch") is not None}),
+            "likely_drum_families": sorted(
+                {item.get("likely_drum_family") for item in items if item.get("likely_drum_family")}
+            ),
+        }
+        for beat, items in sorted(buckets.items())
+    ]
+
+
+def _detected_grid_positions(notes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    buckets: Dict[float, List[Dict[str, Any]]] = {}
+    for note in notes:
+        if note.get("grid_error") is None or note["grid_error"] > GRID_ERROR_TOLERANCE:
+            continue
+        position = note.get("nearest_grid")
+        if position is None:
+            continue
+        buckets.setdefault(position, []).append(note)
+    return [
+        {
+            "beat": position,
+            "count": len(items),
+            "likely_drum_families": sorted(
+                {item.get("likely_drum_family") for item in items if item.get("likely_drum_family")}
+            ),
+        }
+        for position, items in sorted(buckets.items())
+    ]
+
+
+def _density_by_bar(notes: List[Dict[str, Any]], clip_length: Any) -> List[Dict[str, Any]]:
+    length = _float_or_none(clip_length)
+    max_start = max([note["start_beat"] for note in notes if note.get("start_beat") is not None] or [0.0])
+    effective_length = max(length or 0.0, max_start + 0.000001)
+    bar_count = max(1, int((effective_length + BEATS_PER_BAR - 0.000001) // BEATS_PER_BAR))
+    bars: List[Dict[str, Any]] = []
+    for bar_index in range(bar_count):
+        start = bar_index * BEATS_PER_BAR
+        end = start + BEATS_PER_BAR
+        items = [note for note in notes if note.get("start_beat") is not None and start <= note["start_beat"] < end]
+        bars.append(
+            {
+                "bar": bar_index + 1,
+                "start_beat": float(start),
+                "end_beat": float(end),
+                "note_count": len(items),
+                "notes_per_beat": len(items) / float(BEATS_PER_BAR),
+            }
+        )
+    return bars
+
+
+def _downbeat_hits(notes: List[Dict[str, Any]]) -> Dict[str, Any]:
+    hits = [
+        note for note in notes
+        if note.get("start_beat") is not None and _distance_to_modulo(note["start_beat"], BEATS_PER_BAR, 0.0) <= GRID_ERROR_TOLERANCE
+    ]
+    return {"count": len(hits), "positions": _hit_positions(hits)}
+
+
+def _backbeat_hits(notes: List[Dict[str, Any]]) -> Dict[str, Any]:
+    standard = [
+        note for note in notes
+        if note.get("start_beat") is not None
+        and min(_distance_to_modulo(note["start_beat"], BEATS_PER_BAR, 1.0), _distance_to_modulo(note["start_beat"], BEATS_PER_BAR, 3.0))
+        <= GRID_ERROR_TOLERANCE
+    ]
+    half_time = [
+        note for note in notes
+        if note.get("start_beat") is not None
+        and _distance_to_modulo(note["start_beat"], BEATS_PER_BAR, 2.0) <= GRID_ERROR_TOLERANCE
+    ]
+    return {
+        "count": len(standard),
+        "positions": _hit_positions(standard),
+        "standard_backbeat_offsets": [1.0, 3.0],
+        "half_time_candidate_count": len(half_time),
+        "half_time_candidate_positions": _hit_positions(half_time),
+    }
+
+
+def _syncopation_notes(notes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    syncopated = []
+    for note in notes:
+        start = note.get("start_beat")
+        if start is None:
+            continue
+        if _distance_to_nearest_integer(start) <= GRID_ERROR_TOLERANCE:
+            continue
+        if note.get("grid_error") is not None and note["grid_error"] <= GRID_ERROR_TOLERANCE:
+            syncopated.append(note)
+    return syncopated
+
+
+def _hit_positions(notes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    return [
+        {
+            "beat": note.get("start_beat"),
+            "pitch": note.get("pitch"),
+            "likely_drum_family": note.get("likely_drum_family"),
+        }
+        for note in notes
+    ]
+
+
+def _distance_to_modulo(value: float, modulo: float, target: float) -> float:
+    position = value % modulo
+    return min(abs(position - target), abs(position - (target + modulo)), abs((position + modulo) - target))
+
+
+def _distance_to_nearest_integer(value: float) -> float:
+    return abs(value - round(value))
+
+
+def _drum_family(pitch: Any, name: Any = None) -> Optional[str]:
+    pitch_int = _int_or_none(pitch)
+    if pitch_int is not None:
+        for family, pitches in DRUM_PITCH_FAMILIES.items():
+            if pitch_int in pitches:
+                return family
+    if name:
+        lowered = str(name).lower()
+        if "kick" in lowered or "bd" in lowered:
+            return "kick"
+        if "snare" in lowered or "rim" in lowered:
+            return "snare"
+        if "clap" in lowered:
+            return "clap"
+        if "hat" in lowered or "hihat" in lowered or "hi-hat" in lowered:
+            return "hat"
+        if "tom" in lowered:
+            return "tom"
+        if "cymbal" in lowered or "crash" in lowered or "ride" in lowered:
+            return "cymbal"
+    return None
+
+
+def _drum_interpretation(notes: List[Dict[str, Any]], density_by_bar: List[Dict[str, Any]]) -> Dict[str, Any]:
+    by_family: Dict[str, List[Dict[str, Any]]] = {}
+    for note in notes:
+        family = note.get("likely_drum_family")
+        if family:
+            by_family.setdefault(family, []).append(note)
+    return {
+        "confidence": "pitch/name heuristic only",
+        "likely_kick_notes": _hit_positions(by_family.get("kick", [])),
+        "likely_snare_notes": _hit_positions(by_family.get("snare", []) + by_family.get("clap", [])),
+        "likely_hat_notes": _hit_positions(by_family.get("hat", [])),
+        "family_counts": {family: len(items) for family, items in sorted(by_family.items())},
+        "max_notes_per_bar": max([bar.get("note_count", 0) for bar in density_by_bar] or [0]),
+    }
+
+
+def _drum_rhythm_warnings(summary: Dict[str, Any]) -> List[str]:
+    warnings: List[str] = []
+    density = summary.get("density_by_bar") or []
+    max_per_bar = max([bar.get("note_count", 0) for bar in density] or [0])
+    if max_per_bar > BUSY_DRUM_NOTES_PER_BAR:
+        warnings.append("Drum MIDI density is high for a vocal-forward pocket threshold (>16 notes per 4/4 bar).")
+
+    interpretation = summary.get("drum_interpretation") or {}
+    if not interpretation.get("likely_kick_notes") and not interpretation.get("likely_snare_notes") and not interpretation.get("likely_hat_notes"):
+        warnings.append("Drum role was requested, but kick/snare/hat families could not be identified from pitch/name heuristics.")
+    if not (summary.get("downbeat_hits") or {}).get("count"):
+        warnings.append("No downbeat-clustered MIDI hits were detected.")
+    if not (summary.get("backbeat_hits") or {}).get("count") and not (summary.get("backbeat_hits") or {}).get("half_time_candidate_count"):
+        warnings.append("No standard or half-time backbeat-clustered MIDI hits were detected.")
+    return warnings
+
+
+def _grid_alignment_warnings(
+    notes: List[Dict[str, Any]],
+    likely_resolution: Optional[str],
+    average_error: float,
+    max_error: float,
+) -> List[str]:
+    if not notes:
+        return []
+    if likely_resolution is None and (average_error > GRID_ERROR_TOLERANCE or max_error > GRID_ERROR_TOLERANCE * 3):
+        return ["MIDI note starts are inconsistently off grid against the nearest 1/16 reference grid."]
+    if likely_resolution is None:
+        return []
+    if max_error <= MECHANICAL_GRID_TOLERANCE:
+        return ["MIDI note starts are tightly quantized to the detected grid; timing variance appears mechanical from note data alone."]
+    if average_error > GRID_ERROR_TOLERANCE or max_error > GRID_ERROR_TOLERANCE * 3:
+        return ["MIDI note starts are inconsistently off grid against the nearest detected grid."]
+    return []
 
 
 def _read_clip_metadata(
@@ -1059,13 +1649,14 @@ def _notes_payload(result: Dict[str, Any]) -> Optional[List[Any]]:
 def _normalize_note(note: Any) -> Dict[str, Any]:
     if isinstance(note, dict):
         pitch = _int_or_none(_coalesce(note.get("pitch"), note.get("note"), note.get("midi_note")))
+        name = _coalesce(note.get("name"), note.get("note_name"), note.get("drum_name"))
         start = _float_or_none(_coalesce(note.get("start"), note.get("start_time"), note.get("time"), note.get("beat")))
         duration = _float_or_none(_coalesce(note.get("duration"), note.get("length"), note.get("length_beats")))
         end = _float_or_none(_coalesce(note.get("end"), note.get("end_time"), note.get("stop")))
         if end is None and start is not None and duration is not None:
             end = start + duration
         velocity = _float_or_none(note.get("velocity"))
-        return {"pitch": pitch, "start": start, "end": end, "velocity": velocity}
+        return {"pitch": pitch, "name": name, "start": start, "end": end, "velocity": velocity}
 
     if isinstance(note, (list, tuple)):
         pitch = _int_or_none(note[0] if len(note) > 0 else None)
@@ -1073,9 +1664,9 @@ def _normalize_note(note: Any) -> Dict[str, Any]:
         duration = _float_or_none(note[2] if len(note) > 2 else None)
         velocity = _float_or_none(note[3] if len(note) > 3 else None)
         end = start + duration if start is not None and duration is not None else None
-        return {"pitch": pitch, "start": start, "end": end, "velocity": velocity}
+        return {"pitch": pitch, "name": None, "start": start, "end": end, "velocity": velocity}
 
-    return {"pitch": None, "start": None, "end": None, "velocity": None}
+    return {"pitch": None, "name": None, "start": None, "end": None, "velocity": None}
 
 
 def _int_or_none(value: Any) -> Optional[int]:
