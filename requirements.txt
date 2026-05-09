@@ -13,6 +13,9 @@ python-osc>=1.9.3
 PyAudio>=0.2.14
 pyloudnorm>=0.1.1
 soundfile>=0.12.1
+sounddevice>=0.4.6
+librosa>=0.10.0
+scipy>=1.10.0
 
 # ================ Environment ================
 # Environment variable management
