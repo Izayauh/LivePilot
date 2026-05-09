@@ -291,13 +291,13 @@ def suggest_adjustments(comparison: ComparisonReport) -> List[Suggestion]:
 
 def format_report(comparison: ComparisonReport) -> str:
     seconds = comparison.capture_seconds or comparison.yours.duration_seconds
-    loudness = (
-        f"{comparison.matched_lufs:g} LUFS"
+    capture_context = (
+        f"matched at {comparison.matched_lufs:g} LUFS"
         if comparison.matched_lufs is not None
-        else "matched loudness"
+        else "post-FFT normalized loudness"
     )
     lines = [
-        f"Spectral comparison (matched at {loudness}, {seconds:g}s capture):",
+        f"Spectral comparison ({capture_context}, {seconds:g}s capture):",
         "",
         "Frequency balance (your stack vs reference, dB difference):",
     ]
