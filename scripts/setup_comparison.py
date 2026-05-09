@@ -26,6 +26,7 @@ if str(_REPO_ROOT) not in sys.path:
 REFERENCE_LIBRARY_PATH = _REPO_ROOT / "config" / "reference_library.json"
 DEFAULT_TARGET_LUFS = -10.0
 SUPPORTED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".flac", ".m4a"}
+DEFAULT_REFERENCE_TRACK_QUERIES = ("reference", "frerence", "ref")
 
 
 class ComparisonSetupError(RuntimeError):
@@ -104,6 +105,16 @@ class AbletonBridgeClient:
             {"track_index": track_index, "clip_index": clip_index, "cents": cents},
         )
 
+    def get_track_list(self) -> List[dict]:
+        result = self.execute("get_track_list", {})
+        _require_success(result, "read Ableton track list")
+        return list(result.get("tracks", []))
+
+    def find_track_by_name(self, query: str) -> List[dict]:
+        result = self.execute("find_track_by_name", {"query": query})
+        _require_success(result, f"find Ableton track matching {query!r}")
+        return list(result.get("matches", []))
+
 
 def _require_success(result: dict, action: str) -> None:
     if result.get("success"):
@@ -138,29 +149,101 @@ def load_reference_library(library_path: Path = REFERENCE_LIBRARY_PATH) -> dict:
         return json.load(f)
 
 
+def _coerce_track_index(track_ref: str) -> Optional[int]:
+    try:
+        return int(str(track_ref).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _parse_track_list(value: str) -> List[int]:
+    tracks: List[int] = []
+    for raw in str(value).replace(";", ",").split(","):
+        raw = raw.strip()
+        if not raw:
+            continue
+        track_index = _coerce_track_index(raw)
+        if track_index is None:
+            raise ComparisonSetupError(f"Invalid track index in --my-vocal-tracks: {raw!r}")
+        tracks.append(track_index)
+    if not tracks:
+        raise ComparisonSetupError("--my-vocal-tracks must include at least one track index.")
+    return tracks
+
+
+def _resolve_reference_track(
+    bridge: AbletonBridgeClient,
+    reference_track: Optional[str] = None,
+) -> int:
+    if reference_track:
+        track_index = _coerce_track_index(reference_track)
+        if track_index is not None:
+            return track_index
+
+        matches = bridge.find_track_by_name(reference_track)
+        if matches:
+            return int(matches[0]["index"])
+        raise ComparisonSetupError(f"No Ableton track matched {reference_track!r}.")
+
+    for query in DEFAULT_REFERENCE_TRACK_QUERIES:
+        matches = bridge.find_track_by_name(query)
+        if matches:
+            return int(matches[0]["index"])
+
+    tracks = bridge.get_track_list()
+    available = ", ".join(
+        f"{track.get('index')}:{track.get('name', '')}" for track in tracks
+    ) or "none"
+    raise ComparisonSetupError(
+        "No reference path/key was provided and no loaded reference track could "
+        f"be auto-detected. Tried: {', '.join(DEFAULT_REFERENCE_TRACK_QUERIES)}. "
+        f"Available tracks: {available}."
+    )
+
+
 def resolve_reference(
     reference: Optional[str],
     reference_key: Optional[str],
     library_path: Path = REFERENCE_LIBRARY_PATH,
+    bridge: Optional[AbletonBridgeClient] = None,
+    reference_track: Optional[str] = None,
 ) -> dict:
     if reference:
         return {"path": str(Path(reference).expanduser()), "lufs": None, "key": None}
 
     library = load_reference_library(library_path)
     entries = library.get("entries", {})
-    if not reference_key or reference_key not in entries:
+    if reference_key:
+        if reference_key not in entries:
+            available = ", ".join(sorted(entries)) or "none registered"
+            raise ComparisonSetupError(
+                f"Unknown reference key {reference_key!r}. Available keys: {available}."
+            )
+
+        entry = entries[reference_key]
+        return {
+            "path": str(Path(entry["path"]).expanduser()),
+            "lufs": entry.get("lufs"),
+            "key": reference_key,
+            "title": entry.get("title"),
+            "artist": entry.get("artist"),
+        }
+
+    if bridge is None:
         available = ", ".join(sorted(entries)) or "none registered"
         raise ComparisonSetupError(
-            f"Unknown reference key {reference_key!r}. Available keys: {available}."
+            "No reference path/key was provided and Ableton lookup is unavailable. "
+            f"Available registered keys: {available}."
         )
 
-    entry = entries[reference_key]
+    track_index = _resolve_reference_track(bridge, reference_track)
+    audio_path = bridge.get_clip_audio_path(track_index, 0)
     return {
-        "path": str(Path(entry["path"]).expanduser()),
-        "lufs": entry.get("lufs"),
-        "key": reference_key,
-        "title": entry.get("title"),
-        "artist": entry.get("artist"),
+        "path": audio_path,
+        "lufs": None,
+        "key": None,
+        "source_track": track_index,
+        "source": "loaded_clip",
     }
 
 
@@ -289,16 +372,22 @@ def setup_comparison(
     simulate_doubles: bool = False,
     reference_lufs: Optional[float] = None,
     target_lufs: float = DEFAULT_TARGET_LUFS,
+    reference_track: Optional[int] = None,
+    my_vocal_tracks: Optional[List[int]] = None,
     bridge: Optional[AbletonBridgeClient] = None,
     measure_func: Callable[[str], float] = measure_lufs,
 ) -> dict:
     reference = _validate_reference_path(reference_path)
     bridge = bridge or AbletonBridgeClient()
     warnings: List[str] = []
+    vocal_tracks = list(my_vocal_tracks or [my_vocal_track])
+    if my_vocal_track not in vocal_tracks:
+        vocal_tracks.insert(0, my_vocal_track)
+    primary_vocal_track = vocal_tracks[0]
 
     ref_lufs = float(reference_lufs) if reference_lufs is not None else measure_func(str(reference))
     user_lufs, user_audio_path, user_warnings = _measure_user_track_lufs(
-        bridge, my_vocal_track, measure_func
+        bridge, primary_vocal_track, measure_func
     )
     warnings.extend(user_warnings)
 
@@ -306,22 +395,27 @@ def setup_comparison(
     reference_gain_db = target_lufs - ref_lufs
 
     ref_track_name = f"REF: {reference.name}"
-    ref_track = bridge.create_audio_track(ref_track_name)
-    bridge.set_clip_path(ref_track, 0, str(reference))
-    bridge.add_utility_device(
-        my_vocal_track,
-        user_gain_db,
-        "LOUDNESS-MATCH (do not adjust)",
-    )
+    if reference_track is None:
+        ref_track = bridge.create_audio_track(ref_track_name)
+        bridge.set_clip_path(ref_track, 0, str(reference))
+    else:
+        ref_track = int(reference_track)
+    for track_index in vocal_tracks:
+        bridge.add_utility_device(
+            track_index,
+            user_gain_db,
+            "LOUDNESS-MATCH (do not adjust)",
+        )
     bridge.add_utility_device(
         ref_track,
         reference_gain_db,
         "REF LOUDNESS-MATCH (do not adjust)",
     )
-    try:
-        bridge.solo_track(my_vocal_track, True)
-    except ComparisonSetupError as exc:
-        warnings.append(f"Could not pre-solo user vocal track: {exc}")
+    for track_index in vocal_tracks:
+        try:
+            bridge.solo_track(track_index, True)
+        except ComparisonSetupError as exc:
+            warnings.append(f"Could not pre-solo user vocal track {track_index}: {exc}")
 
     doubles = []
     if simulate_doubles:
@@ -336,7 +430,8 @@ def setup_comparison(
         "reference_track": ref_track,
         "reference_gain_db": reference_gain_db,
         "reference_lufs": ref_lufs,
-        "my_vocal_track": my_vocal_track,
+        "my_vocal_track": primary_vocal_track,
+        "my_vocal_tracks": vocal_tracks,
         "my_vocal_lufs": user_lufs,
         "my_vocal_gain_db": user_gain_db,
         "target_lufs": target_lufs,
@@ -354,10 +449,18 @@ def build_parser() -> argparse.ArgumentParser:
             "falls back to Waves WLM Plus short-term LUFS over the current loop."
         ),
     )
-    source = parser.add_mutually_exclusive_group(required=True)
+    source = parser.add_mutually_exclusive_group(required=False)
     source.add_argument("--reference", help="Local reference audio file (.wav, .mp3, .flac, .m4a)")
     source.add_argument("--reference-key", help="Slug from config/reference_library.json")
-    parser.add_argument("--my-vocal-track", type=int, required=True, help="0-based Ableton track index")
+    parser.add_argument("--reference-track",
+                        help=(
+                            "0-based Ableton track index or fuzzy name containing an already-loaded "
+                            "reference clip. Defaults to auto-detecting reference/frerence/ref."
+                        ))
+    vocal_source = parser.add_mutually_exclusive_group(required=True)
+    vocal_source.add_argument("--my-vocal-track", type=int, help="0-based Ableton track index")
+    vocal_source.add_argument("--my-vocal-tracks",
+                              help="Comma-separated 0-based Ableton track indexes for an existing vocal stack")
     parser.add_argument("--simulate-doubles", action="store_true", help="Create cheap L/R fake doubles")
     parser.add_argument("--target-lufs", type=float, default=DEFAULT_TARGET_LUFS,
                         help="Common playback target loudness; default: -10 LUFS")
@@ -368,6 +471,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def _print_summary(summary: dict) -> None:
     ref_name = Path(summary["reference_path"]).name
+    vocal_tracks = summary.get("my_vocal_tracks") or [summary["my_vocal_track"]]
+    vocal_label = ", ".join(str(track) for track in vocal_tracks)
     print("Comparison setup complete.")
     print(
         f"  Reference:   {ref_name} -> track {summary['reference_track']}, "
@@ -375,7 +480,7 @@ def _print_summary(summary: dict) -> None:
         f"loudness-matched at {summary['target_lufs']:.0f} LUFS"
     )
     print(
-        f"  My vocal:    track {summary['my_vocal_track']} -> "
+        f"  My vocal:    track(s) {vocal_label} -> "
         f"loudness-match utility added ({summary['my_vocal_gain_db']:+.1f} dB)"
     )
     print(f"  Doubles:     {'yes' if summary['doubles'] else 'no'}")
@@ -387,18 +492,29 @@ def _print_summary(summary: dict) -> None:
 def main(argv: Optional[List[str]] = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    bridge = AbletonBridgeClient()
     try:
         resolved = resolve_reference(
             args.reference,
             args.reference_key,
             Path(args.library),
+            bridge=bridge,
+            reference_track=args.reference_track,
+        )
+        my_vocal_tracks = (
+            _parse_track_list(args.my_vocal_tracks)
+            if args.my_vocal_tracks
+            else [args.my_vocal_track]
         )
         summary = setup_comparison(
             resolved["path"],
-            args.my_vocal_track,
+            my_vocal_tracks[0],
+            my_vocal_tracks=my_vocal_tracks,
             simulate_doubles=args.simulate_doubles,
             reference_lufs=resolved.get("lufs"),
             target_lufs=args.target_lufs,
+            reference_track=resolved.get("source_track"),
+            bridge=bridge,
         )
     except ComparisonSetupError as exc:
         parser.exit(2, f"ERROR: {exc}\n")

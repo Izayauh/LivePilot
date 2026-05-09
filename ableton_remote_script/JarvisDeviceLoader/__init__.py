@@ -18,6 +18,7 @@ Usage:
 
 from __future__ import with_statement
 import Live
+import os
 import threading
 import socket
 import struct
@@ -145,6 +146,12 @@ class JarvisDeviceLoader(ControlSurface):
                 self._handle_select_device(args, addr)
             elif address == "/jarvis/debug/browser":
                 self._handle_debug_browser(args, addr)
+            elif address == "/jarvis/clip/create_audio":
+                self._handle_create_audio_clip(args, addr)
+            elif address == "/jarvis/clip/get_audio_path":
+                self._handle_get_clip_audio_path(args, addr)
+            elif address == "/jarvis/clip/set_detune":
+                self._handle_set_clip_detune(args, addr)
             elif address == "/jarvis/test":
                 self._send_response(addr, "/jarvis/test/response", ["ok"])
             else:
@@ -776,6 +783,160 @@ class JarvisDeviceLoader(ControlSurface):
             
         self.log_message("=== END BROWSER DEBUG DUMP ===")
         self._send_response(addr, "/jarvis/debug/response", ["dump_complete"])
+
+    # ==================== AUDIO CLIP CONTROL ====================
+
+    def _handle_create_audio_clip(self, args, addr):
+        """Create or replace an audio clip from a local file path."""
+        if len(args) < 3:
+            self._send_response(addr, "/jarvis/clip/create_audio/response",
+                              [0, "error", "Missing arguments: track_index, clip_index, audio_path"])
+            return
+
+        track_index = int(args[0])
+        clip_index = int(args[1])
+        audio_path = os.path.abspath(os.path.expanduser(str(args[2])))
+
+        def do_create_on_main_thread():
+            try:
+                result = self._create_audio_clip(track_index, clip_index, audio_path)
+                self._send_response(addr, "/jarvis/clip/create_audio/response", result)
+            except Exception as e:
+                self.log_message("Create audio clip error: {}".format(str(e)))
+                self._send_response(addr, "/jarvis/clip/create_audio/response",
+                                  [0, "error", str(e)])
+
+        if hasattr(self, 'schedule_message'):
+            self.schedule_message(1, do_create_on_main_thread)
+        else:
+            do_create_on_main_thread()
+
+    def _handle_get_clip_audio_path(self, args, addr):
+        """Return the source file path for an audio clip."""
+        if len(args) < 2:
+            self._send_response(addr, "/jarvis/clip/get_audio_path/response",
+                              [0, "error", "Missing arguments: track_index, clip_index"])
+            return
+
+        track_index = int(args[0])
+        clip_index = int(args[1])
+
+        def do_get_on_main_thread():
+            try:
+                result = self._get_clip_audio_path(track_index, clip_index)
+                self._send_response(addr, "/jarvis/clip/get_audio_path/response", result)
+            except Exception as e:
+                self.log_message("Get clip audio path error: {}".format(str(e)))
+                self._send_response(addr, "/jarvis/clip/get_audio_path/response",
+                                  [0, "error", str(e)])
+
+        if hasattr(self, 'schedule_message'):
+            self.schedule_message(1, do_get_on_main_thread)
+        else:
+            do_get_on_main_thread()
+
+    def _handle_set_clip_detune(self, args, addr):
+        """Set an audio clip's fine pitch in cents."""
+        if len(args) < 3:
+            self._send_response(addr, "/jarvis/clip/set_detune/response",
+                              [0, "error", "Missing arguments: track_index, clip_index, cents"])
+            return
+
+        track_index = int(args[0])
+        clip_index = int(args[1])
+        cents = float(args[2])
+
+        def do_set_on_main_thread():
+            try:
+                result = self._set_clip_detune(track_index, clip_index, cents)
+                self._send_response(addr, "/jarvis/clip/set_detune/response", result)
+            except Exception as e:
+                self.log_message("Set clip detune error: {}".format(str(e)))
+                self._send_response(addr, "/jarvis/clip/set_detune/response",
+                                  [0, "error", str(e)])
+
+        if hasattr(self, 'schedule_message'):
+            self.schedule_message(1, do_set_on_main_thread)
+        else:
+            do_set_on_main_thread()
+
+    def _get_clip_slot(self, track_index, clip_index):
+        song = self._get_song()
+        if not song:
+            return None, [0, "error", "Cannot access song"]
+
+        tracks = list(song.tracks)
+        if track_index < 0 or track_index >= len(tracks):
+            return None, [0, "error", "Invalid track index: {}".format(track_index)]
+
+        clip_slots = list(tracks[track_index].clip_slots)
+        if clip_index < 0 or clip_index >= len(clip_slots):
+            return None, [0, "error", "Invalid clip index: {}".format(clip_index)]
+
+        return clip_slots[clip_index], None
+
+    def _create_audio_clip(self, track_index, clip_index, audio_path):
+        if not os.path.exists(audio_path):
+            return [0, "error", "Audio file does not exist: {}".format(audio_path)]
+
+        clip_slot, error = self._get_clip_slot(track_index, clip_index)
+        if error:
+            return error
+
+        if not hasattr(clip_slot, "create_audio_clip"):
+            return [0, "error", "Live API does not expose ClipSlot.create_audio_clip"]
+
+        try:
+            if getattr(clip_slot, "has_clip", False):
+                clip_slot.delete_clip()
+            clip_slot.create_audio_clip(audio_path)
+            clip = clip_slot.clip
+            clip_name = clip.name if hasattr(clip, "name") else os.path.basename(audio_path)
+            return [1, "success", audio_path, clip_name]
+        except Exception as e:
+            return [0, "error", str(e)]
+
+    def _get_clip_audio_path(self, track_index, clip_index):
+        clip_slot, error = self._get_clip_slot(track_index, clip_index)
+        if error:
+            return error
+
+        if not getattr(clip_slot, "has_clip", False):
+            return [0, "error", "Clip slot is empty"]
+
+        clip = clip_slot.clip
+        if not getattr(clip, "is_audio_clip", False):
+            return [0, "error", "Clip is not an audio clip"]
+
+        audio_path = getattr(clip, "file_path", "")
+        if not audio_path:
+            return [0, "error", "Clip has no readable file_path"]
+
+        return [1, "success", str(audio_path)]
+
+    def _set_clip_detune(self, track_index, clip_index, cents):
+        if cents < -50.0 or cents > 49.0:
+            return [0, "error", "Detune cents must be between -50 and 49"]
+
+        clip_slot, error = self._get_clip_slot(track_index, clip_index)
+        if error:
+            return error
+
+        if not getattr(clip_slot, "has_clip", False):
+            return [0, "error", "Clip slot is empty"]
+
+        clip = clip_slot.clip
+        if not getattr(clip, "is_audio_clip", False):
+            return [0, "error", "Clip is not an audio clip"]
+
+        if not hasattr(clip, "pitch_fine"):
+            return [0, "error", "Clip does not expose pitch_fine"]
+
+        try:
+            clip.pitch_fine = float(cents)
+            return [1, "success", "Detune applied", float(cents)]
+        except Exception as e:
+            return [0, "error", str(e)]
 
     def _get_song(self):
         """Get the current Live song object"""

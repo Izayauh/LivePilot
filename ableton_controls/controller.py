@@ -1560,41 +1560,135 @@ class AbletonController:
         except Exception as e:
             return {"success": False, "message": f"Failed to create audio track: {e}"}
 
+    def _send_jarvis_request(self, address, args=None, timeout=10.0):
+        """Send a request to JarvisDeviceLoader and parse its fixed-port response."""
+        args = args or []
+        sock = None
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.settimeout(timeout)
+            try:
+                sock.bind((self.ip, 11003))
+            except OSError as e:
+                if getattr(e, "errno", None) == 10048:
+                    return {
+                        "success": False,
+                        "message": (
+                            "JarvisDeviceLoader response port 11003 is already in use; "
+                            "close other LivePilot clients and retry."
+                        ),
+                    }
+                raise
+
+            message = self._build_osc_message(address, args)
+            sock.sendto(message, (self.ip, 11002))
+            data, _addr = sock.recvfrom(65535)
+            response_address, response_args = self._parse_osc_message(data)
+            return {
+                "success": True,
+                "address": response_address,
+                "args": response_args,
+            }
+        except socket.timeout:
+            return {
+                "success": False,
+                "message": "Timeout: JarvisDeviceLoader not responding",
+            }
+        except Exception as e:
+            return {"success": False, "message": f"JarvisDeviceLoader OSC error: {e}"}
+        finally:
+            if sock:
+                try:
+                    sock.close()
+                except Exception:
+                    pass
+
+    def _jarvis_status_result(self, response, action):
+        """Convert [success, status, ...] Jarvis replies into bridge result dicts."""
+        if not response.get("success"):
+            return response
+
+        args = response.get("args", [])
+        if len(args) < 2:
+            return {
+                "success": False,
+                "message": f"Invalid JarvisDeviceLoader response for {action}: {args}",
+            }
+
+        success = int(args[0]) == 1
+        message = args[2] if len(args) > 2 else str(args[1])
+        return {
+            "success": success,
+            "status": args[1],
+            "message": message,
+            "response_args": args,
+        }
+
     def set_clip_path(self, track_index, clip_index, audio_path):
         """
-        Place a local audio file into a Session clip slot.
-
-        This is intentionally not faked: stock AbletonOSC in this repo does not
-        currently expose clip import from an arbitrary file path, and
-        JarvisDeviceLoader only handles device loading.
+        Place a local audio file into a Session clip slot via JarvisDeviceLoader.
         """
-        raise NotImplementedError(
-            "set_clip_path requires a Live clip-import endpoint in AbletonOSC "
-            "or JarvisDeviceLoader; no reachable bridge endpoint exists yet."
+        if not audio_path:
+            return {"success": False, "message": "audio_path is required"}
+        audio_path = os.path.abspath(os.path.expanduser(str(audio_path)))
+        if not os.path.exists(audio_path):
+            return {"success": False, "message": f"Audio file does not exist: {audio_path}"}
+
+        response = self._send_jarvis_request(
+            "/jarvis/clip/create_audio",
+            [int(track_index), int(clip_index), audio_path],
+            timeout=20.0,
         )
+        result = self._jarvis_status_result(response, "set_clip_path")
+        if result.get("success"):
+            result.update({
+                "track_index": int(track_index),
+                "clip_index": int(clip_index),
+                "audio_path": audio_path,
+            })
+        return result
 
     def get_clip_audio_path(self, track_index, clip_index):
         """
-        Return the backing file path for an audio clip.
-
-        This needs Live's clip API exposed through a remote script. The current
-        AbletonOSC/JarvisDeviceLoader bridge does not provide it.
+        Return the backing file path for an audio Session clip.
         """
-        raise NotImplementedError(
-            "get_clip_audio_path requires clip.file_path exposure through "
-            "AbletonOSC or JarvisDeviceLoader; no reachable endpoint exists yet."
+        response = self._send_jarvis_request(
+            "/jarvis/clip/get_audio_path",
+            [int(track_index), int(clip_index)],
+            timeout=5.0,
         )
+        result = self._jarvis_status_result(response, "get_clip_audio_path")
+        if result.get("success"):
+            args = response.get("args", [])
+            audio_path = args[2] if len(args) > 2 else ""
+            result.update({
+                "track_index": int(track_index),
+                "clip_index": int(clip_index),
+                "audio_path": audio_path,
+                "path": audio_path,
+            })
+        return result
 
     def set_clip_detune(self, track_index, clip_index, cents):
         """
-        Detune an audio clip in cents.
-
-        Stubbed until the bridge exposes clip-level pitch controls.
+        Detune an audio Session clip in cents via its pitch_fine property.
         """
-        raise NotImplementedError(
-            "set_clip_detune requires clip-level pitch controls through "
-            "AbletonOSC or JarvisDeviceLoader; no reachable endpoint exists yet."
+        response = self._send_jarvis_request(
+            "/jarvis/clip/set_detune",
+            [int(track_index), int(clip_index), float(cents)],
+            timeout=5.0,
         )
+        result = self._jarvis_status_result(response, "set_clip_detune")
+        if result.get("success"):
+            args = response.get("args", [])
+            applied = args[3] if len(args) > 3 else float(cents)
+            result.update({
+                "track_index": int(track_index),
+                "clip_index": int(clip_index),
+                "cents": float(applied),
+            })
+        return result
     
     def create_midi_track(self, index=-1):
         """

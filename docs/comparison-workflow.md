@@ -14,7 +14,28 @@ python scripts/register_reference.py --slug jackie_brown --path "C:\Users\isaia\
 Set up the comparison in a session:
 
 ```powershell
-python scripts/setup_comparison.py --reference-key jackie_brown --my-vocal-track 2
+python scripts/ab_test.py --reference-key jackie_brown --my-vocal-track 2
+```
+
+Or, if the reference is already loaded in Ableton on a track named something
+like `reference`, `frerence`, or `ref`, run the command without a reference
+path/key:
+
+```powershell
+python scripts/ab_test.py --my-vocal-track 2
+```
+
+You can also point at the loaded reference track explicitly:
+
+```powershell
+python scripts/ab_test.py --reference-track frerence --my-vocal-track 2
+```
+
+For an existing vocal stack, pass all vocal tracks. Track indexes are 0-based,
+so Ableton tracks 3, 4, and 5 are `2,3,4`:
+
+```powershell
+python scripts/ab_test.py --reference-track frerence --my-vocal-tracks 2,3,4
 ```
 
 Then listen, tweak the vocal chain by ear, and save the decision:
@@ -26,7 +47,7 @@ python scripts/remember_chain.py --track 2 --style cla_modern_pop --note "matche
 You can also skip the library and pass a one-off file:
 
 ```powershell
-python scripts/setup_comparison.py --reference "C:\path\to\reference.wav" --my-vocal-track 2
+python scripts/ab_test.py --reference "C:\path\to\reference.wav" --my-vocal-track 2
 ```
 
 ## Loudness Matching
@@ -54,9 +75,9 @@ explicitly:
   naming when Live returns track data.
 - `add_utility_device` is implemented through JarvisDeviceLoader plus reliable
   parameter setting, but device renaming is not exposed yet.
-- `set_clip_path`, `get_clip_audio_path`, and `set_clip_detune` are honest
-  stubs until AbletonOSC or JarvisDeviceLoader exposes file import, clip file
-  path readback, and clip pitch controls.
+- `set_clip_path`, `get_clip_audio_path`, and `set_clip_detune` are implemented
+  through JarvisDeviceLoader clip endpoints. JarvisDeviceLoader must be installed
+  and selected in Ableton's Control Surface preferences.
 
-Those gaps are raised clearly instead of silently pretending the Ableton state
-changed.
+Bridge failures are raised clearly instead of silently pretending the Ableton
+state changed.
