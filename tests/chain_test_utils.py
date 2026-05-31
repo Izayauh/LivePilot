@@ -216,7 +216,7 @@ def load_chain_definition(chain_key: str) -> Optional[Dict]:
     """Load a chain definition from plugin_chains.json"""
     knowledge_file = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "knowledge", "plugin_chains.json"
+        "config", "vocal_chains.json"
     )
     
     if not os.path.exists(knowledge_file):

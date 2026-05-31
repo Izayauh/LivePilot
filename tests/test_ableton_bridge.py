@@ -81,7 +81,8 @@ class TestAbletonBridgeList(unittest.TestCase):
             # Device queries
             "get_num_devices", "get_track_devices", "get_device_name",
             "get_device_class_name", "get_device_parameters",
-            "get_device_parameter_value",
+            "get_device_parameter_value", "get_device_parameter_value_string",
+            "get_device_tree", "get_all_device_trees", "get_device_params_by_path",
             # Device control
             "set_device_parameter", "set_device_parameter_by_name",
             "set_device_parameters_by_name",
@@ -89,6 +90,11 @@ class TestAbletonBridgeList(unittest.TestCase):
             # Plugin management
             "add_plugin_to_track", "get_available_plugins",
             "find_plugin", "refresh_plugin_list",
+            # Plugin recipes
+            "list_plugin_recipes", "save_plugin_recipe", "apply_plugin_recipe",
+            # Creative context
+            "get_creative_context", "get_project_intent", "set_project_intent",
+            "plan_arrangement_move",
         }
 
         missing = expected - functions

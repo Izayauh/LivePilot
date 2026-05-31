@@ -1,0 +1,17 @@
+{
+  "template": "vocal_ready_beat",
+  "last_run_utc": "2026-05-17T04:26:40+00:00",
+  "last_changes": [
+    "Automation improvement: SEND - Throw Delay now has delay display-string readback.",
+    "Why it improves vocal-ready beat creation: throw timing, sync, feedback, and wet settings can be verified in musical display units instead of raw numbers when the bridge exposes the return.",
+    "Added reusable delay readback helpers for expected raw values and display-string checks.",
+    "Added priority return-delay verification for SEND - Throw Delay with fallback recognition for Ping Pong Delay, Delay, and Simple Delay.",
+    "Wired the return-delay verifier into the improvement script after bus dynamics readback.",
+    "Documented the Throw Delay display-string verification behavior in docs/vocal-ready-template-automation.md.",
+    "Ableton bridge check failed before live execution: No response from Ableton (timeout).",
+    "Verification passed: python -m unittest tests.test_vocal_ready_template -v (45 tests).",
+    "Verification passed: python -m py_compile templates\\template_manager.py scripts\\improve_vocal_ready_template.py.",
+    "Best next improvement: When Ableton responds, run a zero-device-load pass to write and verify the SEND - Throw Delay delay profile with display-string timing readback, then add bridge support for naming or directly addressing return tracks."
+  ],
+  "next_recommended_improvement": "When Ableton responds, run a zero-device-load pass to write and verify the SEND - Throw Delay delay profile with display-string timing readback, then add bridge support for naming or directly addressing return tracks."
+}

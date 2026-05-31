@@ -41,6 +41,11 @@ try:
         plan_arrangement_move as _plan_arrangement_move,
         set_project_intent as _set_project_intent,
     )
+    from livepilot_tools.plugin_recipes import (
+        apply_plugin_recipe as _apply_plugin_recipe,
+        list_plugin_recipes as _list_plugin_recipes,
+        save_plugin_recipe as _save_plugin_recipe,
+    )
     _ABLETON_IMPORT_ERROR = None
 except Exception as _import_exc:  # pragma: no cover - exercised in lightweight test envs
     _ABLETON_IMPORT_ERROR = str(_import_exc)
@@ -418,10 +423,14 @@ def _describe_functions():
         "set_track_color":     {"args": {"track_index": {"type": "int", "required": True}, "color_index": {"type": "int", "required": True}}, "description": "Set track color"},
         "get_num_devices":     {"args": {"track_index": {"type": "int", "required": True}}, "description": "Get device count on track"},
         "get_track_devices":   {"args": {"track_index": {"type": "int", "required": True}}, "description": "Get device names on track"},
+        "get_device_tree":     {"args": {"track_index": {"type": "int", "required": True}, "timeout": {"type": "float", "required": False}}, "description": "Get recursive device tree for a track"},
+        "get_all_device_trees": {"args": {"track_indices": {"type": "list|null", "required": False}, "timeout": {"type": "float", "required": False}}, "description": "Get recursive device trees for selected or all tracks"},
+        "get_device_params_by_path": {"args": {"track_index": {"type": "int", "required": True}, "device_path": {"type": "list|str", "required": True}, "timeout": {"type": "float", "required": False}}, "description": "Get nested device parameters by captured path"},
         "get_device_name":     {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}}, "description": "Get device name"},
         "get_device_class_name": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}}, "description": "Get device class name"},
         "get_device_parameters": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}}, "description": "Get device parameter names"},
         "get_device_parameter_value": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_index": {"type": "int", "required": True}}, "description": "Get device parameter value"},
+        "get_device_parameter_value_string": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_index": {"type": "int", "required": True}}, "description": "Get device parameter display string"},
         "set_device_parameter": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_index": {"type": "int", "required": True}, "value": {"type": "float", "required": True}}, "description": "Set device parameter (verified)"},
         "set_device_parameter_by_name": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_name": {"type": "str", "required": True}, "value": {"type": "float", "required": True}}, "description": "Set device parameter by name"},
         "set_device_parameters_by_name": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "params": {"type": "dict", "required": True, "description": "{name: value, ...}"}}, "description": "Set multiple device parameters by name"},
@@ -439,6 +448,9 @@ def _describe_functions():
         "plan_arrangement_move": {"args": {"goal": {"type": "str", "required": True}, "target_section": {"type": "str|null", "required": False}}, "description": "Create a reviewable arrangement move plan without executing Ableton changes"},
         "set_project_intent":  {"args": {"intent": {"type": "dict", "required": False, "description": "Project intent object; direct JSON args are also accepted"}}, "description": "Persist project intent for creative context"},
         "get_project_intent":  {"args": {}, "description": "Get persisted project intent"},
+        "list_plugin_recipes": {"args": {}, "description": "List saved plugin parameter recipes"},
+        "save_plugin_recipe":  {"args": {"name": {"type": "str", "required": True}, "track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "note": {"type": "str", "required": False}}, "description": "Snapshot device params to data/recipes/"},
+        "apply_plugin_recipe": {"args": {"name": {"type": "str", "required": True}, "track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}}, "description": "Apply a saved plugin recipe"},
         "describe_functions":  {"args": {}, "description": "List all functions with argument schemas"},
     }
     return {"success": True, "functions": descriptions, "count": len(descriptions)}
@@ -518,6 +530,12 @@ def _build_dispatch(args: dict):
         # -- Device queries --
         "get_num_devices":     lambda: ableton.get_num_devices_sync(track_index),
         "get_track_devices":   lambda: ableton.get_track_devices_sync(track_index),
+        "get_device_tree":     lambda: ableton.get_device_tree(
+            track_index, float(args.get("timeout", 15.0))),
+        "get_all_device_trees": lambda: ableton.get_all_device_trees(
+            args.get("track_indices"), float(args.get("timeout", 15.0))),
+        "get_device_params_by_path": lambda: ableton.get_device_params_by_path(
+            track_index, args.get("device_path"), float(args.get("timeout", 15.0))),
         "get_device_name":     lambda: ableton.get_device_name(
             track_index, _to_int(args.get("device_index"))),
         "get_device_class_name": lambda: ableton.get_device_class_name(
@@ -525,6 +543,9 @@ def _build_dispatch(args: dict):
         "get_device_parameters": lambda: ableton.get_device_parameters_name_sync(
             track_index, _to_int(args.get("device_index"))),
         "get_device_parameter_value": lambda: ableton.get_device_parameter_value_sync(
+            track_index, _to_int(args.get("device_index")),
+            _to_int(args.get("param_index"))),
+        "get_device_parameter_value_string": lambda: ableton.get_device_parameter_value_string_sync(
             track_index, _to_int(args.get("device_index")),
             _to_int(args.get("param_index"))),
 
@@ -582,6 +603,23 @@ def _build_dispatch(args: dict):
         "set_project_intent": lambda: _set_project_intent(args.get("intent", args)),
         "get_project_intent": lambda: _get_project_intent(),
 
+        # -- Plugin recipes --
+        "list_plugin_recipes": lambda: _list_plugin_recipes(),
+        "save_plugin_recipe":  lambda: _save_plugin_recipe(
+            args.get("name"),
+            track_index,
+            _to_int(args.get("device_index")),
+            controller=ableton,
+            note=args.get("note"),
+        ),
+        "apply_plugin_recipe": lambda: _apply_plugin_recipe(
+            args.get("name"),
+            track_index,
+            _to_int(args.get("device_index")),
+            reliable=reliable_params,
+            controller=ableton,
+        ),
+
         # -- Introspection --
         "describe_functions":  lambda: _describe_functions(),
     }
@@ -592,9 +630,10 @@ TRACK_OPERATIONS = {
     "mute_track", "solo_track", "arm_track",
     "set_track_volume", "set_track_pan", "set_track_send",
     "fire_clip", "stop_clip", "set_clip_path", "get_clip_audio_path", "set_clip_detune",
-    "get_num_devices", "get_track_devices", "get_device_name",
+    "get_num_devices", "get_track_devices", "get_device_tree",
+    "get_device_params_by_path", "get_device_name",
     "get_device_class_name", "get_device_parameters",
-    "get_device_parameter_value", "set_device_parameter",
+    "get_device_parameter_value", "get_device_parameter_value_string", "set_device_parameter",
     "set_device_parameter_by_name", "set_device_parameters_by_name",
     "set_device_enabled",
     "add_plugin_to_track", "delete_device", "add_utility_device",

@@ -612,7 +612,10 @@ class AbletonController:
             if response:
                 address, args = response
                 if args and len(args) > 0:
-                    muted = bool(args[0])
+                    # AbletonOSC variants:
+                    # - [mute_value]
+                    # - [track_id, mute_value]
+                    muted = bool(args[-1])
                     return {
                         "success": True,
                         "muted": muted,
@@ -641,7 +644,7 @@ class AbletonController:
             if response:
                 address, args = response
                 if args and len(args) > 0:
-                    soloed = bool(args[0])
+                    soloed = bool(args[-1])
                     return {
                         "success": True,
                         "soloed": soloed,
@@ -670,7 +673,7 @@ class AbletonController:
             if response:
                 address, args = response
                 if args and len(args) > 0:
-                    armed = bool(args[0])
+                    armed = bool(args[-1])
                     return {
                         "success": True,
                         "armed": armed,
@@ -1625,6 +1628,137 @@ class AbletonController:
             "response_args": args,
         }
 
+    def _jarvis_json_result(self, response, action):
+        """Convert [success, status, json] Jarvis replies into a parsed payload."""
+        if not response.get("success"):
+            return response
+
+        args = response.get("args", [])
+        if len(args) < 3:
+            return {
+                "success": False,
+                "message": f"Invalid JarvisDeviceLoader response for {action}: {args}",
+            }
+
+        success = int(args[0]) == 1
+        if not success:
+            message = args[2] if len(args) > 2 else str(args[1])
+            return {
+                "success": False,
+                "status": args[1],
+                "message": message,
+                "response_args": args,
+            }
+
+        try:
+            payload = json.loads(args[2])
+            if payload.get("payload_format") == "json_file":
+                path = payload.get("path")
+                if not path or not os.path.exists(path):
+                    return {
+                        "success": False,
+                        "message": f"JarvisDeviceLoader JSON payload file is missing: {path}",
+                        "response_args": args,
+                    }
+                with open(path, "r") as f:
+                    payload = json.load(f)
+        except Exception as e:
+            return {
+                "success": False,
+                "message": f"Could not parse JarvisDeviceLoader JSON for {action}: {e}",
+                "response_args": args,
+            }
+
+        return {
+            "success": bool(payload.get("success", True)),
+            "status": args[1],
+            "message": f"{action} received",
+            "data": payload,
+            "response_args": args,
+        }
+
+    def get_device_tree(self, track_index, timeout=15.0):
+        """
+        Return the recursive device tree for a track via JarvisDeviceLoader.
+        """
+        response = self._send_jarvis_request(
+            "/jarvis/device/tree",
+            [int(track_index)],
+            timeout=timeout,
+        )
+        result = self._jarvis_json_result(response, "get_device_tree")
+        if result.get("success"):
+            result.update({
+                "track_index": int(track_index),
+                "device_tree": result.get("data", {}),
+            })
+        return result
+
+    def get_all_device_trees(self, track_indices=None, timeout=15.0):
+        """
+        Return recursive device trees for selected tracks.
+
+        This intentionally calls the single-track endpoint repeatedly instead
+        of asking the Remote Script for one huge UDP packet.
+        """
+        if track_indices is None:
+            track_result = self.get_track_list()
+            if not track_result.get("success"):
+                return {
+                    "success": False,
+                    "device_trees": [],
+                    "message": track_result.get("message", "Could not get track list"),
+                }
+            track_indices = [track.get("index") for track in track_result.get("tracks", [])
+                             if track.get("index") is not None]
+        elif isinstance(track_indices, str):
+            track_indices = json.loads(track_indices)
+
+        device_trees = []
+        errors = []
+        for index in track_indices:
+            result = self.get_device_tree(int(index), timeout=timeout)
+            if result.get("success"):
+                device_trees.append(result.get("device_tree", {}))
+            else:
+                errors.append({
+                    "track_index": int(index),
+                    "message": result.get("message", "Unknown error"),
+                })
+
+        return {
+            "success": len(errors) == 0,
+            "device_trees": device_trees,
+            "errors": errors,
+            "count": len(device_trees),
+            "message": f"Captured {len(device_trees)} device tree(s)",
+        }
+
+    def get_device_params_by_path(self, track_index, device_path, timeout=15.0):
+        """
+        Return parameter details for a nested device path via JarvisDeviceLoader.
+        """
+        if isinstance(device_path, str):
+            device_path_json = device_path
+        else:
+            device_path_json = json.dumps(device_path, separators=(",", ":"))
+
+        response = self._send_jarvis_request(
+            "/jarvis/device/params_by_path",
+            [int(track_index), device_path_json],
+            timeout=timeout,
+        )
+        result = self._jarvis_json_result(response, "get_device_params_by_path")
+        if result.get("success"):
+            data = result.get("data", {})
+            result.update({
+                "track_index": int(track_index),
+                "device_path": data.get("device_path"),
+                "parameters": data.get("parameters", []),
+                "device_params": data,
+            })
+        return result
+
     def set_clip_path(self, track_index, clip_index, audio_path):
         """
         Place a local audio file into a Session clip slot via JarvisDeviceLoader.
@@ -1807,10 +1941,19 @@ class AbletonController:
     def get_tempo(self):
         """Query current tempo"""
         try:
-            self.client.send_message("/live/song/get/tempo", [])
-            return {"success": True, "message": "Tempo query sent"}
+            response = self._send_and_wait("/live/song/get/tempo", [], timeout=2.0)
+            if response:
+                _address, args = response
+                if args and len(args) > 0:
+                    try:
+                        tempo = float(args[0])
+                    except (TypeError, ValueError):
+                        tempo = None
+                    return {"success": True, "tempo": tempo, "message": "Tempo received"}
+                return {"success": False, "tempo": None, "message": "Empty tempo response from Ableton"}
+            return {"success": False, "tempo": None, "message": "No response from Ableton (timeout)"}
         except Exception as e:
-            return {"success": False, "message": f"Failed to query tempo: {e}"}
+            return {"success": False, "tempo": None, "message": f"Failed to query tempo: {e}"}
     
     def get_track_names(self):
         """

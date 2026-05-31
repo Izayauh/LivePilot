@@ -20,9 +20,13 @@ config/tool_registry.json
 config/macros.json
 config/reference_library.json
 data/project_intent.json
-preferences/*.json
-!preferences/.gitkeep
-!preferences/README.md
+data/*
+!data/recipes/
+!data/recipes/**
+!data/chains/
+!data/chains/**
+!data/chain_preferences/
+!data/chain_preferences/**
 
 # OS/editor artifacts
 .DS_Store
@@ -36,7 +40,3 @@ calibration_log.txt
 
 # Codex Cloud task clones — never check these in
 live-pilot-*/
-
-# Runtime state directories
-context/
-data/

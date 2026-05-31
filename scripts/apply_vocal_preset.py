@@ -8,7 +8,7 @@ async — just load devices and set parameters.
 
 Usage:
     python scripts/apply_vocal_preset.py --track 0
-    python scripts/apply_vocal_preset.py --track 0 --preset knowledge/chains/travis_scott.json
+    python scripts/apply_vocal_preset.py --track 0 --preset data/chains/travis_scott.json
     python scripts/apply_vocal_preset.py --track 0 --style cla_modern_pop
     python scripts/apply_vocal_preset.py --track 0 --dry-run          # validate only
     python scripts/apply_vocal_preset.py --track 0 --device 2         # start from device #2 only (skip loads, just set params)
@@ -29,13 +29,13 @@ if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
 from osc_preflight import check_osc_bridge
-from plugins.chain_resolver import resolve_plugin
-from preferences.chain_preferences import load_overrides, merge_with_template
+from livepilot_tools.chain_resolver import resolve_plugin
+from livepilot_tools.chain_preferences import load_overrides, merge_with_template
 
 
-DEFAULT_PRESET = os.path.join(_REPO_ROOT, "knowledge", "chains", "travis_scott.json")
+DEFAULT_PRESET = os.path.join(_REPO_ROOT, "data", "chains", "travis_scott.json")
 OWNED_PLUGINS_PATH = os.path.join(_REPO_ROOT, "config", "owned_plugins.json")
-PLUGIN_CHAINS_PATH = os.path.join(_REPO_ROOT, "knowledge", "plugin_chains.json")
+PLUGIN_CHAINS_PATH = os.path.join(_REPO_ROOT, "config", "vocal_chains.json")
 DEVICE_LOAD_TIMEOUT_ENV = "LIVE_PILOT_DEVICE_LOAD_TIMEOUT_SEC"
 DEFAULT_DEVICE_LOAD_TIMEOUT_SEC = 30.0
 DEVICE_LOAD_POLL_INTERVAL_SEC = 1.0
@@ -596,7 +596,7 @@ def main():
     parser.add_argument("--preset", type=str, default=None,
                         help="Path to preset JSON file")
     parser.add_argument("--style", type=str, default=None,
-                        help="Waves vocal chain style from knowledge/plugin_chains.json")
+                        help="Waves vocal chain style from config/vocal_chains.json")
     parser.add_argument("--dry-run", action="store_true",
                         help="Print plan without executing")
     parser.add_argument("--device", type=int, default=None,

@@ -9,7 +9,7 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 class TestWavesChains(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        with open(os.path.join(REPO_ROOT, "knowledge", "plugin_chains.json"), encoding="utf-8") as f:
+        with open(os.path.join(REPO_ROOT, "config", "vocal_chains.json"), encoding="utf-8") as f:
             cls.chain_data = json.load(f)
         with open(os.path.join(REPO_ROOT, "config", "owned_plugins.json"), encoding="utf-8") as f:
             cls.owned_data = json.load(f)

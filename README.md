@@ -1,568 +1,82 @@
-# Jarvis Ableton - Voice-Controlled Music Production
+# LivePilot — MCP-first Ableton control
 
-A voice-controlled AI assistant for Ableton Live 11, powered by Google Gemini 2.5. Control your DAW hands-free using natural language commands.
+Deterministic Ableton Live control through AbletonOSC and a shared Python bridge. Agents (Claude Code, Cursor, OpenClaw) call the same functions via MCP or CLI—no LLM inside the control layer.
 
 ## Features
 
-- 🎤 **Voice Control**: Control Ableton Live using natural language through Gemini's real-time audio streaming
-- 🎹 **Comprehensive Controls**: Playback, transport, track controls, scenes, clips, and more
-- 🤖 **AI-Powered**: Uses Google Gemini 2.5 Flash with function calling
-- 🔊 **Voice Feedback**: Jarvis responds with voice confirmations
-- 📡 **OSC Bridge**: Communicates with Ableton via OSC protocol
-- 💬 **Desktop Text Chat UI**: Local non-browser chat window for text-only control
-- 🎚️ **Waves Vocal Chains**: Waves-first vocal chain templates with local preference learning; see `docs/vocal-chains.md`
-- ⚖️ **Reference A/B Setup**: Register local references and set up loudness-matched vocal comparisons; see `docs/comparison-workflow.md`
+- **MCP server** — `run_mcp_server.py` exposes `list_livepilot_tools`, `call_livepilot_tool`, and creative-context helpers
+- **Bridge CLI** — `ableton_bridge.py` for scripting and exec-based agents (~50+ functions)
+- **Verified parameters** — `set_device_parameters_by_name` with readback via `reliable_params.py`
+- **Plugin recipes** — save/apply per-device snapshots under `data/recipes/`
+- **Vocal chains** — Waves templates in `config/vocal_chains.json`; `scripts/apply_vocal_preset.py`, `scripts/remember_chain.py`
+- **Parameter contracts** — manifest-driven plans in `livepilot_tools/parameter_contracts.py`
 
 ## Prerequisites
 
-1. **Ableton Live 11** (or compatible version)
-2. **AbletonOSC Plugin** - Install from [AbletonOSC GitHub](https://github.com/ideoforms/AbletonOSC)
-3. **Python 3.8+**
-4. **Google Gemini API Key** - Get from [Google AI Studio](https://aistudio.google.com/app/apikey)
-5. **Audio Input Device** (microphone)
+1. **Ableton Live** with [AbletonOSC](https://github.com/ideoforms/AbletonOSC) on port **11000**
+2. **JarvisDeviceLoader** remote script (repo: `ableton_remote_script/JarvisDeviceLoader/`) on port **11002** for device load / nested params
+3. **Python 3.10+** and `pip install -r requirements.txt`
 
-## Installation
+## Quick start
 
-### 1. Clone or Download this Repository
+### MCP (Claude Code / Cursor)
 
-```bash
-cd JarvisAbleton
-```
-
-### 2. Create Virtual Environment
-
-```bash
-python -m venv venv
-```
-
-Activate it:
-- **Windows PowerShell**: `.\venv\Scripts\Activate.ps1`
-- **Windows CMD**: `.\venv\Scripts\activate.bat`
-- **macOS/Linux**: `source venv/bin/activate`
-
-### 3. Install Dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Configure Environment Variables
-
-Copy `.env.example` to `.env`:
-
-```bash
-cp .env.example .env
-```
-
-Windows PowerShell alternative:
 ```powershell
-Copy-Item .env.example .env
+cd C:\Users\isaia\Projects\music\live-pilot
+python -m py_compile run_mcp_server.py mcp_server\server.py
+claude mcp add --scope user live-pilot -- python C:\Users\isaia\Projects\music\live-pilot\run_mcp_server.py
 ```
 
-Edit `.env` and add your Google Gemini API key:
+### Bridge CLI
 
-```
-GOOGLE_API_KEY=your_actual_api_key_here
-```
-
-### 5. Setup AbletonOSC
-
-1. Download and install [AbletonOSC](https://github.com/ideoforms/AbletonOSC)
-2. Place the AbletonOSC MIDI Remote Script in Ableton's MIDI Remote Scripts folder:
-   - **Windows**: `C:\ProgramData\Ableton\Live 11\Resources\MIDI Remote Scripts\`
-   - **macOS**: `/Applications/Ableton Live 11.app/Contents/App-Resources/MIDI Remote Scripts/`
-3. Open Ableton Live preferences → Link/Tempo/MIDI → Control Surface
-4. Select "AbletonOSC" from the dropdown
-5. Verify the OSC server is running on port **11000** (default)
-
-## Usage
-
-### Start Jarvis
-
-1. **Launch Ableton Live** with AbletonOSC enabled
-2. **Activate your virtual environment**
-3. **Run Jarvis**:
-
-```bash
-python jarvis_engine.py
-```
-
-You should see:
-
-```
---- Testing Ableton OSC Connection ---
-✓ OSC Bridge connected successfully
---- Jarvis Online (Hamilton Studio) ---
-Available functions: 22
->>> Jarvis is listening (Hamilton Studio)...
-```
-
-### Start Desktop Text Chat UI (No Mic)
-
-If you want local text-only conversation (no browser UI):
-
-```bash
-python jarvis_text_ui.py
-```
-
-This opens a desktop chat window that uses the same function-calling control path as text mode.
-
-### Start Desktop Chat — OpenClaw (No API Keys)
-
-Desktop chat window (Tkinter) that routes through OpenClaw relay — no Gemini or OpenAI keys needed.
-
-**From Windows PowerShell:**
 ```powershell
-cd C:\Users\isaia\Documents\JarvisAbleton
-.\venv\Scripts\python.exe jarvis_desktop_openclaw.py
+python ableton_bridge.py --list
+python ableton_bridge.py diag_osc '{}'
+python ableton_bridge.py get_track_list '{}'
+python ableton_bridge.py set_device_parameters_by_name '{"track_index":0,"device_index":0,"params":{"Volume":0.8}}'
 ```
 
-**From WSL:**
-```bash
-cd /mnt/c/Users/isaia/Documents/JarvisAbleton
-./venv/Scripts/python.exe jarvis_desktop_openclaw.py
+### Plugin recipes
+
+```powershell
+python ableton_bridge.py list_plugin_recipes '{}'
+python ableton_bridge.py save_plugin_recipe '{"name":"my-eq","track_index":0,"device_index":1}'
+python ableton_bridge.py apply_plugin_recipe '{"name":"night-owl-kk-piano-foundation","track_index":0,"device_index":0}'
 ```
 
-Type `/health` in the chat input to test relay connectivity.
+Re-capture `data/recipes/night-owl-kk-piano-foundation.json` with `save_plugin_recipe` when Ableton is open (committed file is a schema placeholder until then).
 
-> **Ableton Bridge**: The OpenClaw desktop app uses the `main` agent by default,
-> which has access to Ableton controls via `ableton_bridge.py`. The agent calls the
-> bridge CLI through its `exec` tool to run OSC commands (get tracks, mute, set tempo,
-> load plugins, etc.). **Ableton Live must be running with AbletonOSC loaded** for
-> these commands to work. If Ableton is not running, the bridge returns an error JSON
-> and the agent relays the message gracefully.
->
-> You can also use the bridge directly from the command line:
-> ```bash
-> ./venv/Scripts/python.exe ableton_bridge.py --list              # list all functions
-> ./venv/Scripts/python.exe ableton_bridge.py get_track_list '{}'  # query Ableton
-> ./venv/Scripts/python.exe ableton_bridge.py get_creative_context '{}' # structured creative context
-> ./venv/Scripts/python.exe ableton_bridge.py analyze_clip_context '{"track_index":0,"clip_index":0}' # MIDI clip summary where available
-> ./venv/Scripts/python.exe ableton_bridge.py analyze_rhythm_context '{"track_index":2,"clip_index":0,"role":"drums"}' # MIDI-only rhythm grid alignment
-> ./venv/Scripts/python.exe ableton_bridge.py plan_arrangement_move '{"goal":"make the hook lift without adding busy drums","target_section":"hook"}' # reviewable plan only
-> ./venv/Scripts/python.exe ableton_bridge.py set_project_intent '{"genre":"rnb","mood":"intimate","references":["Trust Me - The Fray"],"arrangement_goal":"preserve groove while improving emotional lift","avoid":["fake listening claims"]}'
-> ./venv/Scripts/python.exe ableton_bridge.py get_project_intent '{}'
-> ```
+### Vocal preset (no LLM)
 
-Example `get_creative_context` output:
-
-```json
-{
-  "transport": {"playing": false, "recording": false, "tempo": 92.0, "position_beats": 0.0},
-  "loop": {"enabled": false, "start_beats": 0.0, "length_beats": 4.0},
-  "tracks": {"count": 1, "items": [{"index": 0, "number": 1, "name": "Piano"}]},
-  "selected": {"track_index": 0, "scene_index": 0},
-  "selected_clip": {"track_index": 0, "clip_index": 0, "note_count": 12, "pitch_range": 19},
-  "selected_rhythm": {"track_index": 0, "clip_index": 0, "likely_resolution": "1/16", "average_grid_error": 0.0},
-  "rhythm_context": {"track_index": 0, "clip_index": 0, "likely_resolution": "1/16", "average_grid_error": 0.0},
-  "active_librarian": {"song": "Trust Me", "section": "verse", "chain": []},
-  "project_intent": {
-    "genre": "rnb",
-    "references": ["Trust Me - The Fray"],
-    "mood": "intimate",
-    "arrangement_goal": "preserve groove while improving emotional lift",
-    "prefer": [],
-    "avoid": ["fake listening claims"],
-    "notes": null,
-    "updated_at": "2026-05-01T00:00:00"
-  },
-  "recent_actions": [],
-  "project": {"name": "Trust Me Sketch", "genre": "rnb", "stage": "arrangement"},
-  "known_limitations": {"limitations": [], "missing_fields": []}
-}
+```powershell
+python scripts/apply_vocal_preset.py --track 0 --style cla_modern_pop
+python scripts/remember_chain.py --track 0 --style cla_modern_pop
 ```
 
-In this version, `selected_clip` uses the cached selected track and selected scene as the clip-slot address when no dedicated selected-clip API is exposed.
-`selected_rhythm`/`rhythm_context` use the same selected clip-slot address and only inspect accessible MIDI note timing.
-
-Example `analyze_clip_context` output when the active controller exposes clip metadata and MIDI notes:
-
-```json
-{
-  "success": true,
-  "track_index": 0,
-  "clip_index": 0,
-  "clip_name": "Verse Piano",
-  "clip_length_beats": 8.0,
-  "note_count": 24,
-  "pitch_min": 48,
-  "pitch_max": 72,
-  "pitch_range": 24,
-  "velocity_min": 64.0,
-  "velocity_max": 112.0,
-  "average_velocity": 88.5,
-  "note_start_min": 0.0,
-  "note_end_max": 7.75,
-  "density_notes_per_beat": 3.0,
-  "limitations": [],
-  "missing_fields": []
-}
-```
-
-Example `analyze_rhythm_context` output for a sparse half-time drum clip:
-
-```json
-{
-  "success": true,
-  "track_index": 2,
-  "clip_index": 0,
-  "role": "drums",
-  "clip_length_beats": 4.0,
-  "note_count": 6,
-  "notes_by_beat": [{"beat": 0, "count": 2, "pitches": [36, 42]}],
-  "detected_grid_positions": [{"beat": 0.0, "count": 2, "likely_drum_families": ["hat", "kick"]}],
-  "off_grid_notes": [],
-  "average_grid_error": 0.0,
-  "max_grid_error": 0.0,
-  "likely_resolution": "1/4",
-  "density_by_bar": [{"bar": 1, "start_beat": 0.0, "end_beat": 4.0, "note_count": 6, "notes_per_beat": 1.5}],
-  "downbeat_hits": {"count": 2, "positions": [{"beat": 0.0, "pitch": 36, "likely_drum_family": "kick"}]},
-  "backbeat_hits": {"count": 2, "standard_backbeat_offsets": [1.0, 3.0], "half_time_candidate_count": 2},
-  "syncopation_notes": [],
-  "drum_interpretation": {
-    "confidence": "pitch/name heuristic only",
-    "family_counts": {"hat": 4, "kick": 1, "snare": 1}
-  },
-  "warnings": [
-    "MIDI note starts are tightly quantized to the detected grid; timing variance appears mechanical from note data alone."
-  ],
-  "missing_fields": [],
-  "limitations": [
-    "Assumes 4/4 bar grouping for downbeat, backbeat, and density summaries.",
-    "MIDI-only analysis; no audio listening, transient detection, swing extraction, or groove feel judgment."
-  ]
-}
-```
-
-Example `plan_arrangement_move` output:
-
-```json
-{
-  "success": true,
-  "schema_version": "arrangement-plan-v1",
-  "goal": "make the hook lift without adding busy drums",
-  "target_section": "hook",
-  "context_summary": {
-    "tempo": 92.0,
-    "selected_track_index": 0,
-    "selected_scene_index": 0,
-    "selected_clip": {"track_index": 0, "clip_index": 0, "note_count": 12, "missing_fields": []}
-  },
-  "assumptions": ["This plan is a proposal only; no Ableton changes have been executed."],
-  "constraints": ["Planning only; do not execute Ableton changes."],
-  "moves": [
-    {
-      "type": "scene_or_arrangement_marker",
-      "description": "Review or label the target section boundary before making arrangement edits.",
-      "target": {"section": "hook"},
-      "parameters": {"label": "hook", "planning_only": true},
-      "reason": "Arrangement moves are safer when the intended section is explicit.",
-      "status": "proposed"
-    },
-    {
-      "type": "arrangement_edit",
-      "description": "Draft a section-level edit that supports the stated goal without changing project data yet.",
-      "target": {"section": "hook"},
-      "parameters": {"goal": "make the hook lift without adding busy drums", "planning_only": true},
-      "reason": "The request is about arrangement direction, so this remains a reviewable placeholder.",
-      "status": "proposed"
-    }
-  ],
-  "warnings": ["Goal appears to require listening judgment; human review is required."],
-  "requires_human_review": true
-}
-```
-
-`plan_arrangement_move` does not execute changes. It returns a schema-validated proposal and flags missing context or listening-dependent goals for human review.
-
-Known v1 limitations:
-
-- `get_creative_context` is a context snapshot, not an audio listener.
-- `analyze_clip_context` only summarizes accessible MIDI clip data. If the current controller cannot expose clip metadata or notes, those fields are returned as missing.
-- `analyze_rhythm_context` uses MIDI note starts only; drum family labels are pitch/name heuristics and are not certainty claims.
-- `plan_arrangement_move` is planning only and never writes arrangement, MIDI, device, or automation changes.
-- Some live Ableton fields may be reported as missing if the current controller does not expose them.
-- Audio, key, energy, and section analysis are intentionally out of scope for the current context milestones.
-
-### Start WSL Terminal Chat (OpenClaw, No API Keys)
-
-Pure terminal chat (no window) — for WSL-only sessions:
-
-```bash
-cd /mnt/c/Users/isaia/Documents/JarvisAbleton
-python3 jarvis_text_cli_wsl.py
-```
-
-> **Note**: Use WSL-native `python3` for the CLI version.
-> The desktop app above uses Windows Python and calls `wsl.exe` to reach OpenClaw.
-
-Built-in commands: `/health` (connectivity check), `/quit` (exit).
-
-### Example Voice Commands
-
-Once Jarvis is running, you can say:
-
-**Playback Controls:**
-- "Play" / "Start playback"
-- "Stop" / "Stop playback"
-- "Start recording"
-- "Turn on the metronome" / "Turn off the metronome"
-
-**Transport Controls:**
-- "Set tempo to 120 BPM"
-- "Set the loop to 4 beats"
-- "Enable the loop"
-
-**Track Controls:**
-- "Mute track 1" / "Unmute track 2"
-- "Solo track 3"
-- "Arm track 1 for recording"
-- "Set track 2 volume to 0.8"
-- "Pan track 1 to the left" (use negative values)
-
-**Scene & Clip Controls:**
-- "Fire scene 1"
-- "Launch the clip on track 2, slot 3"
-- "Stop all clips on track 1"
-
-### Important: Track Indexing
-
-**Track 1 in Ableton = Index 0 in the code**
-
-Jarvis understands this automatically:
-- When you say "Track 1", Jarvis uses `track_index=0`
-- When you say "Track 2", Jarvis uses `track_index=1`
-- Same for scenes and clip slots
-
-## Testing
-
-Test the OSC connection independently:
-
-```bash
-python tests/test_ableton.py
-```
-
-This will toggle the metronome on/off. Check if the metronome icon in Ableton turns orange.
-
-## Project Structure
+## Project layout
 
 ```
-JarvisAbleton/
-├── jarvis_engine.py                # Main voice control engine
-├── jarvis_tools.py                 # Gemini function declarations
-├── ableton_bridge.py               # CLI bridge for OpenClaw agents (no Gemini)
-├── ableton_controls/               # Ableton integration package
-│   ├── controller.py               # OSC communication + process convenience methods
-│   ├── process_manager.py          # Open/Close/Restart Ableton, crash dialog handling
-│   └── reliable_params.py          # Retry-resilient parameter setting
-├── agents/                         # Multi-agent AI pipeline
-├── knowledge/                      # Plugin chain KB, device KB
-├── research/                       # Web + YouTube research
-├── discovery/                      # VST discovery, device intelligence
-├── context/                        # Session management, persistence
-├── config/                         # OSC paths, settings
-├── tests/                          # Test suite with crash recovery
-│   ├── ableton_process_manager.py  # Backward-compat stub (re-exports from ableton_controls)
-│   ├── crash_resilient_wrapper.py  # Crash detection + auto-recovery
-│   └── run_incremental_test.py     # Incremental chain tests
-├── docs/                           # Documentation
-├── requirements.txt                # Python dependencies
-├── .env                            # Environment variables (not in git)
-├── .env.example                    # Environment template
-├── docs/architecture_visualization.html # Interactive architecture diagram
-└── README.md                       # This file
+live-pilot/
+├── run_mcp_server.py
+├── mcp_server/
+├── ableton_bridge.py
+├── ableton_controls/
+├── livepilot_tools/       # shared deterministic tools
+├── config/                # osc_paths, vocal_chains, manifests, …
+├── data/recipes/          # plugin param snapshots
+├── scripts/               # vocal preset, OSC verify, …
+├── tests/                 # focused unit tests
+└── legacy/                # archived Jarvis / agent stack
 ```
 
-## Architecture
+See `docs/implementation_plan.md` for the cleanup plan and `CLAUDE.md` for agent conventions.
 
-```
-┌─────────────────┐
-│  Your Voice     │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────────────┐
-│   Gemini 2.5 Flash      │ ◄── Real-time audio streaming
-│   (Function Calling)    │     + Tool definitions (62 functions)
-└────────┬────────────────┘
-         │
-         ▼
-┌─────────────────────────┐
-│   jarvis_engine.py      │ ◄── Receives function calls
-│   + 6 AI Agents         │     Routes to agents/controllers
-└────────┬────────────────┘
-         │
-         ▼
-┌──────────────────────────────────────────┐
-│  ableton_controls/                       │
-│  ├── controller.py  (OSC, port 11000)    │ ◄── OSC Client + process lifecycle
-│  └── process_manager.py                  │ ◄── Open/Close/Restart/Crash Recovery
-└────────┬─────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────┐
-│   AbletonOSC Bridge     │
-│   + JarvisDeviceLoader  │
-└────────┬────────────────┘
-         │
-         ▼
-┌─────────────────────────┐
-│   Ableton Live 11       │
-└─────────────────────────┘
+## Tests
+
+```powershell
+python -m unittest tests.test_ableton_bridge tests.test_parameter_contracts tests.test_plugin_recipes tests.test_context_tools -v
 ```
 
-## Non-Chatty Execution Architecture
+## Legacy Jarvis
 
-The chain builder now uses a deterministic pipeline instead of iterative "chatty" loops.
-
-- Entry point: `build_chain_pipeline` (single Gemini tool call per chain)
-- Plan schema: `pipeline/schemas.py` (`ChainPipelinePlan`, `DeviceSpec`, `ParamSpec`)
-- Executor: `pipeline/executor.py` (`PLAN -> EXECUTE -> VERIFY -> REPORT`)
-- Guardrail: `pipeline/guardrail.py` (blocks extra LLM calls in execute/verify)
-- Fallback resolver: `pipeline/fallback_map.py` (stock -> blacklist/prefs -> keyword fallback)
-
-### Pipeline Phases
-
-1. **PLAN**: Validate track + payload, resolve device names, and count the single planning LLM call.
-2. **EXECUTE**: Load devices and set semantic parameters with idempotency checks.
-3. **VERIFY**: Re-read values and mark verified/skipped outcomes.
-4. **REPORT**: Return a complete `PipelineResult` with timing, per-device/per-param results, skips, and errors/warnings.
-
-### Before vs. After LLM Call Count
-
-| Scenario | Old "Chatty" Loop | New Non-Chatty Pipeline |
-|---|---:|---:|
-| 3-device vocal chain (8 params) | Usually many iterative calls (often `30+` in practice) | `1` call total |
-| 5-device chain (20 params) | Scales with per-param/per-step retries | `1` call total |
-| General behavior | ~`O(params + retries)` | `O(1)` (exactly `1` plan call) |
-
-Notes:
-- Old behavior was conversational and iterative (`add_plugin_to_track` + repeated `set_device_parameter` loops).
-- New behavior sends the entire chain plan once, then executes locally and deterministically.
-
-### Manual Verification Checklist (Live Ableton)
-
-Use this checklist on your Ableton machine before deployment sign-off.
-
-1. **Preflight setup**
-   - Start Ableton Live.
-   - In Ableton Preferences -> Link/Tempo/MIDI -> Control Surface:
-     - Enable `AbletonOSC` (default OSC control path, port `11000`).
-     - Enable `JarvisDeviceLoader` (device load path, port `11002`/`11003`).
-   - Activate your venv and install dependencies.
-
-2. **Run pipeline integration script**
-   - Command: `python tests/test_pipeline_integration.py --track 0`
-   - Expected preflight output:
-     - `[OK] Ableton connected: ... tracks`
-     - `[OK] JarvisDeviceLoader connected`
-   - If preflight fails, script should skip gracefully.
-
-3. **Validate Dry Run phase**
-   - Test should print `[PASS] Dry run test passed`.
-   - Confirm:
-     - `phase_reached == plan`
-     - no devices loaded
-     - no parameter writes performed
-
-4. **Validate End-to-End chain execution**
-   - Test should print `[PASS] Basic vocal chain test passed`.
-   - Confirm:
-     - `Devices: 3/3`
-     - planned params were set/verified
-     - `LLM calls: 1`
-     - `phase_reached == report`
-
-5. **Validate idempotent re-run**
-   - Test should print `[PASS] Idempotent re-run test passed`.
-   - Confirm:
-     - first and second run both succeed
-     - second run `total_params_skipped_idempotent >=` first run
-     - each run reports `LLM calls: 1`
-
-6. **Validate fallback behavior (manual spot-check)**
-   - Create a test plan that includes a missing device name plus `fallback`.
-   - Confirm run succeeds with fallback device and `is_fallback=True` on affected device result.
-
-7. **Deployment pass criteria**
-   - All three integration tests pass on at least one real track.
-   - No extra LLM calls beyond `1` per chain intent.
-   - No unexpected errors in pipeline result or logs.
-
-### Process Control
-
-Jarvis can programmatically manage the Ableton process:
-
-```python
-from ableton_controls import ableton
-
-ableton.open_ableton()                              # Launch Ableton
-ableton.open_ableton(project_path="song.als")       # Launch with project
-ableton.close_ableton(force=True)                    # Close (force kill if needed)
-ableton.restart_ableton(reopen_project=True)         # Restart, accept recovery dialog
-ableton.restart_ableton(reopen_project=False)        # Restart, decline recovery dialog
-```
-
-The crash recovery dialog can be configured to default to Yes, No, or Ask:
-```python
-from ableton_controls.process_manager import get_ableton_manager
-manager = get_ableton_manager(recovery_action="yes")  # "yes", "no", or "ask"
-```
-
-## Troubleshooting
-
-### "OSC Bridge not responding"
-
-- Make sure Ableton Live is running
-- Check that AbletonOSC is selected in Ableton's Control Surface preferences
-- Verify AbletonOSC is configured to use port 11000
-- Try running `python tests/test_ableton.py` to verify OSC connectivity
-
-### "No module named 'pyaudio'"
-
-On Windows, PyAudio might need manual installation:
-```bash
-pip install pipwin
-pipwin install pyaudio
-```
-
-On macOS with Homebrew:
-```bash
-brew install portaudio
-pip install pyaudio
-```
-
-### Audio Input Issues
-
-- Check your microphone is working and selected as the default input device
-- Ensure your system allows Python to access the microphone
-- Test with: `python -m pyaudio` to see available devices
-
-### Gemini API Errors
-
-- Verify your API key is correct in `.env`
-- Check you have API quota remaining
-- Ensure you're using the correct API version (v1alpha)
-
-## Contributing
-
-Feel free to open issues or submit pull requests for:
-- Additional Ableton controls
-- Improved error handling
-- Better voice command recognition
-- Documentation improvements
-
-## License
-
-This project is provided as-is for personal use.
-
-## Credits
-
-- Built with [Google Gemini](https://deepmind.google/technologies/gemini/)
-- Uses [AbletonOSC](https://github.com/ideoforms/AbletonOSC) by ideoforms
-- Powered by [python-osc](https://github.com/attwad/python-osc)
-
----
-
-**Studio Location**: Hamilton, Ohio 🎵
-
+Voice/Gemini Jarvis (`jarvis_engine.py`, agents, research bot) lives under `legacy/` for reference only. Use MCP + bridge for new work.

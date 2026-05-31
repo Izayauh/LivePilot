@@ -1,6 +1,6 @@
 import unittest
 
-from plugins.chain_resolver import resolve_plugin
+from livepilot_tools.chain_resolver import resolve_plugin
 
 
 class TestChainResolver(unittest.TestCase):

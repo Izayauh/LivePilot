@@ -1,0 +1,259 @@
+{
+  "artist": "Travis Scott",
+  "song": "",
+  "track_type": "vocal",
+  "style_description": "Pitch-forward trap vocals with controlled dynamics, bright top-end, and slightly gritty harmonic density. The lead sits upfront while time-based effects create width and depth without washing out articulation. The overall sound is polished, compressed, and atmospheric.",
+  "confidence": 0.8,
+  "chain": [
+    {
+      "plugin_name": "EQ Eight",
+      "category": "eq",
+      "purpose": "Remove low-end rumble and reduce muddy low-mids before compression.",
+      "parameters": {
+        "Band 1 On": 1,
+        "Band 1 Filter Type": 0,
+        "Band 1 Frequency": 95,
+        "Band 1 Gain": 0,
+        "Band 1 Q": 0.71,
+        "Band 2 On": 1,
+        "Band 2 Filter Type": 3,
+        "Band 2 Frequency": 300,
+        "Band 2 Gain": -3.2,
+        "Band 2 Q": 1.15,
+        "Output Gain": 0
+      },
+      "fallbacks": [
+        "Auto Filter",
+        "Channel EQ"
+      ]
+    },
+    {
+      "plugin_name": "Compressor",
+      "category": "compressor",
+      "purpose": "Primary vocal leveling and transient control to keep the vocal consistently forward.",
+      "parameters": {
+        "Threshold": -19,
+        "Ratio": 4,
+        "Attack": 7,
+        "Release": 75,
+        "Knee": 6,
+        "Makeup": 1,
+        "Dry Wet": 100,
+        "Output Gain": 0
+      },
+      "fallbacks": [
+        "Glue Compressor",
+        "Multiband Dynamics"
+      ]
+    },
+    {
+      "plugin_name": "Multiband Dynamics",
+      "category": "de-esser",
+      "purpose": "Control sibilance by compressing the high band dynamically.",
+      "parameters": {
+        "High Threshold": -25,
+        "High Ratio": 3,
+        "High Attack": 2,
+        "High Release": 50,
+        "High Gain": -1.2,
+        "Dry Wet": 100,
+        "Output Gain": 0
+      },
+      "fallbacks": [
+        "Compressor",
+        "EQ Eight"
+      ]
+    },
+    {
+      "plugin_name": "Saturator",
+      "category": "saturation",
+      "purpose": "Add harmonic richness and slight edge for modern trap vocal density.",
+      "parameters": {
+        "Drive": 4,
+        "Base": 10,
+        "Frequency": 7000,
+        "Depth": 0,
+        "Output": -2,
+        "Dry Wet": 40
+      },
+      "fallbacks": [
+        "Overdrive",
+        "Dynamic Tube"
+      ]
+    },
+    {
+      "plugin_name": "EQ Eight",
+      "category": "eq",
+      "purpose": "Add presence and air after dynamics/saturation processing.",
+      "parameters": {
+        "Band 5 On": 1,
+        "Band 5 Filter Type": 2,
+        "Band 5 Frequency": 4800,
+        "Band 5 Gain": 2.4,
+        "Band 5 Q": 0.9,
+        "Band 8 On": 1,
+        "Band 8 Filter Type": 1,
+        "Band 8 Frequency": 12500,
+        "Band 8 Gain": 3.8,
+        "Band 8 Q": 0.7,
+        "Output Gain": 0
+      },
+      "fallbacks": [
+        "Channel EQ",
+        "Auto Filter"
+      ]
+    },
+    {
+      "plugin_name": "Reverb",
+      "category": "reverb",
+      "purpose": "Create dark atmospheric tail while preserving lead intelligibility.",
+      "parameters": {
+        "PreDelay": 24,
+        "Decay Time": 2.4,
+        "Size": 90,
+        "Low Cut": 180,
+        "High Cut": 7000,
+        "Stereo": 120,
+        "Dry Wet": 10,
+        "Output Gain": 0
+      },
+      "fallbacks": [
+        "Hybrid Reverb",
+        "Convolution Reverb"
+      ]
+    },
+    {
+      "plugin_name": "Delay",
+      "category": "delay",
+      "purpose": "Add tempo-synced width and rhythmic tail movement.",
+      "parameters": {
+        "Sync": 1,
+        "Time Left": 3,
+        "Time Right": 2,
+        "Feedback": 30,
+        "Filter Low": 220,
+        "Filter High": 6500,
+        "Ping Pong": 1,
+        "Dry Wet": 12,
+        "Output Gain": 0
+      },
+      "fallbacks": [
+        "Echo",
+        "Simple Delay"
+      ]
+    },
+    {
+      "plugin_name": "Limiter",
+      "category": "limiter",
+      "purpose": "Catch remaining peaks and stabilize final vocal output.",
+      "parameters": {
+        "Gain": 2,
+        "Ceiling": -1,
+        "Release": 55
+      },
+      "fallbacks": [
+        "Glue Compressor",
+        "Compressor"
+      ]
+    },
+    {
+      "plugin_name": "Utility",
+      "category": "utility",
+      "purpose": "Final gain staging and stereo width control.",
+      "parameters": {
+        "Gain": 0,
+        "Width": 100,
+        "Bass Mono": 1,
+        "Bass Freq": 120,
+        "Mute": 0
+      },
+      "fallbacks": [
+        "Channel EQ",
+        "Auto Filter"
+      ]
+    }
+  ],
+  "safe_ranges": {
+    "EQ Eight Band 1 Frequency": [
+      70,
+      140
+    ],
+    "EQ Eight Band 2 Gain": [
+      -6,
+      -1
+    ],
+    "Compressor Threshold": [
+      -28,
+      -10
+    ],
+    "Compressor Ratio": [
+      2,
+      6
+    ],
+    "Compressor Attack": [
+      3,
+      20
+    ],
+    "Compressor Release": [
+      40,
+      140
+    ],
+    "Multiband Dynamics High Threshold": [
+      -36,
+      -18
+    ],
+    "Multiband Dynamics High Ratio": [
+      2,
+      5
+    ],
+    "Saturator Drive": [
+      1,
+      7
+    ],
+    "Saturator Dry Wet": [
+      20,
+      60
+    ],
+    "EQ Eight Band 5 Gain": [
+      0,
+      4
+    ],
+    "EQ Eight Band 8 Gain": [
+      0,
+      6
+    ],
+    "Reverb PreDelay": [
+      10,
+      50
+    ],
+    "Reverb Decay Time": [
+      1.5,
+      3.8
+    ],
+    "Reverb Dry Wet": [
+      6,
+      18
+    ],
+    "Delay Feedback": [
+      15,
+      40
+    ],
+    "Delay Dry Wet": [
+      6,
+      20
+    ],
+    "Limiter Ceiling": [
+      -1.5,
+      -0.3
+    ],
+    "Utility Width": [
+      85,
+      130
+    ]
+  },
+  "notes": "Use pitch correction before this chain for the signature Travis-style tone. For cleaner mix control, place Reverb and Delay on return tracks at 100 wet and automate send levels; keep insert values lower if used directly on the vocal track.",
+  "source": "single-shot-gemini-2.0-flash",
+  "query": "Travis Scott Vocal Chain",
+  "version": 1,
+  "created_at": "2026-02-14T02:34:19.315155"
+}
