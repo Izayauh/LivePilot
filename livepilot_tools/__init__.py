@@ -11,4 +11,5 @@ __all__ = [
     "kontakt_library",
     "parameter_contracts",
     "plugin_recipes",
+    "stem_tools",
 ]

@@ -895,6 +895,104 @@ class AbletonController:
             return {"success": True, "message": f"Clip fired on track {track_index + 1}, slot {clip_index + 1}"}
         except Exception as e:
             return {"success": False, "message": f"Failed to fire clip: {e}"}
+
+    def set_audio_clip_warping(self, track_index, clip_index, warping):
+        """Enable or disable warping for an audio clip."""
+        try:
+            state = 1 if bool(warping) else 0
+            self.client.send_message(
+                "/live/clip/set/warping",
+                [int(track_index), int(clip_index), state],
+            )
+            return {
+                "success": True,
+                "track_index": int(track_index),
+                "clip_index": int(clip_index),
+                "warping": bool(warping),
+            }
+        except Exception as e:
+            return {"success": False, "message": f"Failed to set clip warping: {e}"}
+
+    def set_audio_clip_looping(self, track_index, clip_index, looping):
+        """Enable or disable looping for an audio clip."""
+        try:
+            state = 1 if bool(looping) else 0
+            self.client.send_message(
+                "/live/clip/set/looping",
+                [int(track_index), int(clip_index), state],
+            )
+            return {
+                "success": True,
+                "track_index": int(track_index),
+                "clip_index": int(clip_index),
+                "looping": bool(looping),
+            }
+        except Exception as e:
+            return {"success": False, "message": f"Failed to set clip looping: {e}"}
+
+    def set_audio_clip_start_marker(self, track_index, clip_index, marker):
+        """Set an audio clip's start marker in its current time domain."""
+        try:
+            self.client.send_message(
+                "/live/clip/set/start_marker",
+                [int(track_index), int(clip_index), float(marker)],
+            )
+            return {
+                "success": True,
+                "track_index": int(track_index),
+                "clip_index": int(clip_index),
+                "start_marker": float(marker),
+            }
+        except Exception as e:
+            return {"success": False, "message": f"Failed to set clip start marker: {e}"}
+
+    def set_audio_clip_loop_start(self, track_index, clip_index, marker):
+        """Set an audio clip's loop start in its current time domain."""
+        try:
+            self.client.send_message(
+                "/live/clip/set/loop_start",
+                [int(track_index), int(clip_index), float(marker)],
+            )
+            return {
+                "success": True,
+                "track_index": int(track_index),
+                "clip_index": int(clip_index),
+                "loop_start": float(marker),
+            }
+        except Exception as e:
+            return {"success": False, "message": f"Failed to set clip loop start: {e}"}
+
+    def set_audio_clip_end_marker(self, track_index, clip_index, marker):
+        """Set an audio clip's end marker in its current time domain."""
+        try:
+            self.client.send_message(
+                "/live/clip/set/end_marker",
+                [int(track_index), int(clip_index), float(marker)],
+            )
+            return {
+                "success": True,
+                "track_index": int(track_index),
+                "clip_index": int(clip_index),
+                "end_marker": float(marker),
+            }
+        except Exception as e:
+            return {"success": False, "message": f"Failed to set clip end marker: {e}"}
+
+    def set_audio_clip_loop_end(self, track_index, clip_index, marker):
+        """Set an audio clip's loop end in its current time domain."""
+        try:
+            self.client.send_message(
+                "/live/clip/set/loop_end",
+                [int(track_index), int(clip_index), float(marker)],
+            )
+            return {
+                "success": True,
+                "track_index": int(track_index),
+                "clip_index": int(clip_index),
+                "loop_end": float(marker),
+            }
+        except Exception as e:
+            return {"success": False, "message": f"Failed to set clip loop end: {e}"}
     
     def stop_clip(self, track_index):
         """

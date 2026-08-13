@@ -1,0 +1,2089 @@
+# Vocal-Ready Template Changelog
+
+## 2026-05-17T04:26:40+00:00
+- Automation improvement: SEND - Throw Delay now has delay display-string readback.
+- Why it improves vocal-ready beat creation: throw timing, sync, feedback, and wet settings can be verified in musical display units instead of raw numbers when the bridge exposes the return.
+- Added reusable delay readback helpers for expected raw values and display-string checks.
+- Added priority return-delay verification for SEND - Throw Delay with fallback recognition for Ping Pong Delay, Delay, and Simple Delay.
+- Wired the return-delay verifier into the improvement script after bus dynamics readback.
+- Documented the Throw Delay display-string verification behavior in docs/vocal-ready-template-automation.md.
+- Ableton bridge check failed before live execution: No response from Ableton (timeout).
+- Verification passed: python -m unittest tests.test_vocal_ready_template -v (45 tests).
+- Verification passed: python -m py_compile templates\template_manager.py scripts\improve_vocal_ready_template.py.
+- Best next improvement: When Ableton responds, run a zero-device-load pass to write and verify the SEND - Throw Delay delay profile with display-string timing readback, then add bridge support for naming or directly addressing return tracks.
+
+## 2026-05-17T02:24:44+00:00
+- Automation improvement: SEND - Throw Delay now has an explicit delay profile.
+- Why it improves vocal-ready beat creation: transition throws get a controlled synced echo with modest feedback and wet level, keeping ear-candy behind the lead-vocal center.
+- Added a reusable throw_delay device profile with 16% wet, 32% feedback, sync enabled, and a conservative time seed.
+- Mapped SEND - Throw Delay delay devices to the dedicated profile through TRACK_DEVICE_PROFILE_OVERRIDES.
+- Documented the Throw Delay return profile in docs/vocal-ready-template-automation.md.
+- Ableton bridge check failed before live execution: No response from Ableton (timeout).
+- Verification passed: python -m unittest tests.test_vocal_ready_template -v (42 tests).
+- Verification passed: python -m py_compile templates\template_manager.py scripts\improve_vocal_ready_template.py.
+- Best next improvement: When Ableton responds, run a zero-device-load pass to write and verify the SEND - Throw Delay delay profile, then add delay value-string readback for stock Delay/Ping Pong Delay timing controls.
+
+## 2026-05-17T00:23:07+00:00
+- Automation improvement: SEND - Long Hall now has an explicit long reverb profile.
+- Why it improves vocal-ready beat creation: the chord-bed hall send keeps its intended filtered 2.8s tail instead of inheriting the generic short-reverb profile.
+- Added a reusable long_hall_reverb device profile with 14% wet, 2.8s decay, 24 ms predelay, 250 Hz low cut, and 6.5 kHz high cut.
+- Mapped SEND - Long Hall reverb devices to the dedicated profile through TRACK_DEVICE_PROFILE_OVERRIDES.
+- Documented the Long Hall return profile in docs/vocal-ready-template-automation.md.
+- Ableton bridge check failed before live execution: No response from Ableton (timeout).
+- Verification passed: python -m unittest tests.test_vocal_ready_template -v (42 tests).
+- Verification passed: python -m py_compile templates\template_manager.py scripts\improve_vocal_ready_template.py.
+- Best next improvement: When Ableton responds, run a zero-device-load pass to write and verify the SEND - Long Hall reverb profile, then rerun routing and send readback.
+
+## 2026-05-16T22:20:45+00:00
+- Automation improvement: MUSIC - Chords now gets a low default send to SEND - Long Hall.
+- Why it improves vocal-ready beat creation: chord beds can gain filtered depth while staying behind the lead vocal and inside the existing MUSIC BUS - Vocal Pocket routing.
+- Mapped send slot 2 to SEND - Long Hall in the reusable send target plan.
+- Added MUSIC - Chords send slot 2 at level 0.035 to the deterministic send plan.
+- Documented the chord-bed Long Hall default in docs/vocal-ready-template-automation.md.
+- Added template metadata marking the MUSIC - Chords ambience-send purpose.
+- Ableton bridge check failed before live execution: No response from Ableton (timeout).
+- Verification passed: python -m unittest tests.test_vocal_ready_template -v (41 tests).
+- Verification passed: python -m py_compile templates\template_manager.py scripts\improve_vocal_ready_template.py.
+- Best next improvement: Run a small exact-match-safe device-load pass for route-enabling Drum Rack, Drift, and EQ Eight devices, then rerun routing and send readback.
+
+## 2026-05-14T17:43:23+00:00
+- Automation improvement: Glue Compressor semantic fallback indices and discrete-control normalization now match the local Ableton parameter order.
+- Why it improves vocal-ready beat creation: DRUM BUS glue writes now target Attack, Ratio, Release, and Dry/Wet with Glue-specific values instead of stale continuous-compressor assumptions, keeping drum density controlled around the vocal pocket.
+- Directly verified DRUM BUS Glue Compressor Ratio write using glue_ratio_enum at parameter index 5.
+- Directly verified DRUM BUS Glue Compressor Attack write using glue_attack_enum at parameter index 4.
+- Directly verified DRUM BUS Glue Compressor Release write using glue_release_enum at parameter index 6.
+- Directly verified DRUM BUS Glue Compressor Dry/Wet write at parameter index 7.
+- Best next improvement: add exact value-string/display readback for Glue Compressor threshold and timing settings so future verification can report musical values instead of raw enum indices.
+
+## 2026-05-12T08:52:02+00:00
+- Created track: DRUMS - Kick
+- Created track: DRUMS - Snare Clap
+- Created track: DRUMS - Hats Perc Top
+- Created track: DRUM BUS
+- Created track: BASS - Sub 808
+- Created track: BASS BUS
+- Created track: MUSIC - Chords
+- Created track: MUSIC - Keys Pad
+- Created track: MUSIC - Lead Hook
+- Created track: MUSIC BUS - Vocal Pocket
+- Created track: VOCAL - Lead Placeholder
+- Created track: VOCAL - Doubles Adlibs
+- Created track: VOCAL BUS
+- Created track: FX - Transitions Texture
+- Created track: REFERENCE / PRINT
+- Applied color and conservative volume defaults to template tracks
+- DRUMS - Kick: Could not load Drum Rack
+- DRUMS - Kick: Could not load EQ Eight
+- DRUMS - Kick: Could not load Saturator
+- DRUMS - Kick: Could not load Utility
+- DRUMS - Snare Clap: Could not load Drum Rack
+- DRUMS - Snare Clap: Could not load EQ Eight
+- DRUMS - Snare Clap: Could not load Compressor
+- DRUMS - Snare Clap: Could not load Utility
+- DRUMS - Hats Perc Top: Could not load Drum Rack
+- DRUMS - Hats Perc Top: Could not load EQ Eight
+- DRUMS - Hats Perc Top: Could not load Utility
+- DRUM BUS: Could not load EQ Eight
+- DRUM BUS: Could not load Glue Compressor
+- DRUM BUS: Could not load Saturator
+- DRUM BUS: Could not load Utility
+- BASS - Sub 808: Could not load Operator
+- BASS - Sub 808: Could not load EQ Eight
+- BASS - Sub 808: Could not load Saturator
+- Stopped device loading at max_device_loads for this run
+
+## 2026-05-12T08:53:43+00:00
+- Applied color and conservative volume defaults to template tracks
+- BASS - Sub 808: Could not load Compressor
+- BASS - Sub 808: Could not load Utility
+- BASS BUS: Could not load EQ Eight
+- BASS BUS: Could not load Saturator
+- BASS BUS: Could not load Compressor
+- BASS BUS: Could not load Utility
+- MUSIC - Chords: Could not load Wavetable
+- MUSIC - Chords: Could not load EQ Eight
+- MUSIC - Chords: Could not load Utility
+- MUSIC - Keys Pad: Could not load Electric
+- Stopped device loading at max_device_loads for this run
+
+## 2026-05-12T08:55:56+00:00
+- Applied color and conservative volume defaults to template tracks
+- Removed blocked device Pro-Q 3 from DRUMS - Kick
+- Removed blocked device Pro-Q 4 from DRUMS - Kick
+- Removed blocked device Pro-Q 3 from DRUMS - Snare Clap
+- Removed blocked device Pro-Q 4 from DRUMS - Snare Clap
+- Removed blocked device Pro-Q 3 from DRUMS - Hats Perc Top
+- Removed blocked device Pro-Q 4 from DRUMS - Hats Perc Top
+- Removed blocked device Pro-Q 3 from DRUM BUS
+- Removed blocked device Pro-Q 4 from DRUM BUS
+- Removed blocked device Pro-Q 3 from BASS - Sub 808
+- Removed blocked device Pro-Q 4 from BASS - Sub 808
+- MUSIC - Keys Pad: Loaded EQ Eight
+- MUSIC - Keys Pad: Loaded Chorus-Ensemble
+- MUSIC - Keys Pad: Loaded Reverb
+- MUSIC - Keys Pad: Loaded Utility
+- MUSIC - Lead Hook: Loaded Wavetable
+- MUSIC - Lead Hook: Loaded EQ Eight
+- MUSIC - Lead Hook: Loaded Compressor
+- MUSIC - Lead Hook: Loaded Utility
+- Stopped device loading at max_device_loads for this run
+
+## 2026-05-12T08:56:50+00:00
+- Applied color and conservative volume defaults to template tracks
+- MUSIC - Lead Hook: Loaded Wavetable
+- MUSIC BUS - Vocal Pocket: Loaded EQ Eight
+- MUSIC BUS - Vocal Pocket: Loaded Compressor
+- MUSIC BUS - Vocal Pocket: Loaded Utility
+- VOCAL - Lead Placeholder: Loaded Utility
+- VOCAL - Lead Placeholder: Loaded EQ Eight
+- VOCAL - Lead Placeholder: Loaded Gate
+- VOCAL - Lead Placeholder: Loaded Compressor
+- VOCAL - Lead Placeholder: Loaded Multiband Dynamics
+- VOCAL - Lead Placeholder: Loaded Saturator
+- VOCAL - Doubles Adlibs: Loaded Utility
+- VOCAL - Doubles Adlibs: Loaded EQ Eight
+- VOCAL - Doubles Adlibs: Loaded Compressor
+- VOCAL BUS: Loaded Utility
+- VOCAL BUS: Loaded EQ Eight
+- VOCAL BUS: Loaded Compressor
+- Stopped device loading at max_device_loads for this run
+
+## 2026-05-12T08:57:20+00:00
+- Applied color and conservative volume defaults to template tracks
+- MUSIC - Lead Hook: Loaded Wavetable
+- VOCAL BUS: Loaded Multiband Dynamics
+- VOCAL BUS: Loaded Saturator
+- FX - Transitions Texture: Loaded EQ Eight
+- FX - Transitions Texture: Loaded Utility
+- REFERENCE / PRINT: Loaded Utility
+- REFERENCE / PRINT: Loaded EQ Eight
+
+## 2026-05-12T09:00:04+00:00
+- Applied color and conservative volume defaults to template tracks
+- Removed blocked device Marvel GEQ from MUSIC - Lead Hook
+- Removed blocked device Marvel GEQ from MUSIC - Lead Hook
+- Removed blocked device Marvel GEQ from MUSIC - Lead Hook
+- MUSIC - Lead Hook: Loaded Drift
+
+## 2026-05-12T09:23:51+00:00
+- Applied color and conservative volume defaults to template tracks
+- Removed blocked device Marvel GEQ from BASS - Sub 808
+- Removed blocked device Arpeggiator from BASS - Sub 808
+- Removed blocked device F6-RTA Stereo from BASS BUS
+- Removed blocked device Q10 Stereo from BASS BUS
+- Removed blocked device F6-RTA Stereo from MUSIC - Chords
+- Removed blocked device Q10 Stereo from MUSIC - Chords
+- Removed blocked device Marvel GEQ from MUSIC - Chords
+- Removed blocked device Arpeggiator from MUSIC - Chords
+- Removed blocked device Marvel GEQ from MUSIC - Keys Pad
+- Removed blocked device Arpeggiator from MUSIC - Keys Pad
+- Routed DRUMS - Kick to DRUM BUS
+- Routed DRUMS - Snare Clap to DRUM BUS
+- Routed DRUMS - Hats Perc Top to DRUM BUS
+- Routed BASS - Sub 808 to BASS BUS
+- Routed MUSIC - Chords to MUSIC BUS - Vocal Pocket
+- Routed MUSIC - Keys Pad to MUSIC BUS - Vocal Pocket
+- Routed MUSIC - Lead Hook to MUSIC BUS - Vocal Pocket
+- Routed VOCAL - Lead Placeholder to VOCAL BUS
+- Routed VOCAL - Doubles Adlibs to VOCAL BUS
+- Set monitoring on BASS BUS
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 1 params on DRUMS - Kick: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Kick: EQ Eight (skipped 0, failed 0)
+- Set 5 params on DRUMS - Kick: Saturator (skipped 0, failed 0)
+- Set 2 params on DRUMS - Kick: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 5 params on DRUMS - Kick: Utility (skipped 0, failed 0)
+- Set 1 params on DRUMS - Snare Clap: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Snare Clap: EQ Eight (skipped 0, failed 0)
+- Set 7 params on DRUMS - Snare Clap: Compressor (skipped 0, failed 0)
+- Set 4 params on DRUMS - Snare Clap: Glue Compressor (skipped 0, failed 3)
+- Set 5 params on DRUMS - Snare Clap: Utility (skipped 0, failed 0)
+- Set 1 params on DRUMS - Hats Perc Top: Drum Rack (skipped 0, failed 0)
+- Set 10 params on DRUMS - Hats Perc Top: EQ Eight (skipped 0, failed 0)
+- Set 5 params on DRUMS - Hats Perc Top: Utility (skipped 0, failed 0)
+- Set 5 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 4 params on DRUM BUS: Glue Compressor (skipped 0, failed 3)
+- Set 7 params on DRUM BUS: Compressor (skipped 0, failed 0)
+- Set 6 params on DRUM BUS: Solid Bus Comp (skipped 1, failed 0)
+- Set 5 params on DRUM BUS: Saturator (skipped 0, failed 0)
+- Set 2 params on DRUM BUS: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 5 params on DRUM BUS: Utility (skipped 0, failed 0)
+- Set 1 params on BASS - Sub 808: Drift (skipped 0, failed 0)
+- Set 15 params on BASS - Sub 808: EQ Eight (skipped 0, failed 0)
+- Set 5 params on BASS - Sub 808: Saturator (skipped 0, failed 0)
+- Set 2 params on BASS - Sub 808: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 7 params on BASS - Sub 808: Compressor (skipped 0, failed 0)
+- Set 4 params on BASS - Sub 808: Glue Compressor (skipped 0, failed 3)
+- Set 5 params on BASS - Sub 808: Utility (skipped 0, failed 0)
+- Set 5 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 5 params on BASS BUS: Saturator (skipped 0, failed 0)
+- Set 2 params on BASS BUS: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 7 params on BASS BUS: Compressor (skipped 0, failed 0)
+- Set 4 params on BASS BUS: Glue Compressor (skipped 0, failed 3)
+- Set 5 params on BASS BUS: Utility (skipped 0, failed 0)
+- Set 1 params on MUSIC - Chords: Drift (skipped 0, failed 0)
+- Set 15 params on MUSIC - Chords: EQ Eight (skipped 0, failed 0)
+- Set 5 params on MUSIC - Chords: Utility (skipped 0, failed 0)
+- Set 1 params on MUSIC - Keys Pad: Electric Grand 80 Stereo (skipped 0, failed 0)
+- Set 15 params on MUSIC - Keys Pad: EQ Eight (skipped 0, failed 0)
+- Set 5 params on MUSIC - Keys Pad: Chorus-Ensemble (skipped 0, failed 0)
+- Set 3 params on MUSIC - Keys Pad: Reverb (skipped 3, failed 0)
+- Set 5 params on MUSIC - Keys Pad: Utility (skipped 0, failed 0)
+- Set 1 params on MUSIC - Lead Hook: Drift (skipped 0, failed 0)
+- Set 10 params on MUSIC - Lead Hook: EQ Eight (skipped 0, failed 0)
+- Set 7 params on MUSIC - Lead Hook: Compressor (skipped 0, failed 0)
+- Set 5 params on MUSIC - Lead Hook: Utility (skipped 0, failed 0)
+- Set 20 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Set 7 params on MUSIC BUS - Vocal Pocket: Compressor (skipped 0, failed 0)
+- Set 5 params on MUSIC BUS - Vocal Pocket: Utility (skipped 0, failed 0)
+- Set 5 params on VOCAL - Lead Placeholder: Utility (skipped 0, failed 0)
+- Set 20 params on VOCAL - Lead Placeholder: EQ Eight (skipped 0, failed 0)
+- Set 7 params on VOCAL - Lead Placeholder: Gate (skipped 0, failed 0)
+- Set 7 params on VOCAL - Lead Placeholder: Compressor (skipped 0, failed 0)
+- Set 5 params on VOCAL - Lead Placeholder: Multiband Dynamics (skipped 0, failed 2)
+- Set 5 params on VOCAL - Lead Placeholder: Saturator (skipped 0, failed 0)
+- Set 5 params on VOCAL - Doubles Adlibs: Utility (skipped 0, failed 0)
+- Set 5 params on VOCAL - Doubles Adlibs: EQ Eight (skipped 0, failed 0)
+- Set 7 params on VOCAL - Doubles Adlibs: Compressor (skipped 0, failed 0)
+- Set 5 params on VOCAL BUS: Utility (skipped 0, failed 0)
+- Set 15 params on VOCAL BUS: EQ Eight (skipped 0, failed 0)
+- Set 7 params on VOCAL BUS: Compressor (skipped 0, failed 0)
+- Set 5 params on VOCAL BUS: Multiband Dynamics (skipped 0, failed 2)
+- Set 5 params on VOCAL BUS: Saturator (skipped 0, failed 0)
+- Set 9 params on FX - Transitions Texture: EQ Eight (skipped 0, failed 0)
+- Set 5 params on FX - Transitions Texture: Utility (skipped 0, failed 0)
+- Set 5 params on REFERENCE / PRINT: Utility (skipped 0, failed 0)
+- Set 5 params on REFERENCE / PRINT: EQ Eight (skipped 0, failed 0)
+
+## 2026-05-12T11:08:37+00:00
+- Applied color and conservative volume defaults to template tracks
+- Automation: stop removing Q10/F6 EQ devices (allowed alternatives) from template tracks/buses
+## 2026-05-12T13:08:25+00:00
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on DRUM BUS
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 1 params on DRUMS - Kick: Drum Rack (skipped 0, failed 0)
+- Set 13 params on DRUMS - Kick: EQ Eight (skipped 0, failed 2)
+- Parameter profiles capped after 2 devices / 20 writes (time budget 30s)
+
+## 2026-05-12T13:10:41+00:00
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on BASS BUS
+- Set monitoring on DRUM BUS
+- Set monitoring on VOCAL BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 1 params on DRUMS - Kick: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Kick: EQ Eight (skipped 0, failed 0)
+- Set 5 params on DRUMS - Kick: Saturator (skipped 0, failed 0)
+- Set 2 params on DRUMS - Kick: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 5 params on DRUMS - Kick: Utility (skipped 0, failed 0)
+- Set 1 params on DRUMS - Snare Clap: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Snare Clap: EQ Eight (skipped 0, failed 0)
+- Set 7 params on DRUMS - Snare Clap: Compressor (skipped 0, failed 0)
+- Parameter profiles capped after 8 devices / 55 writes (time budget 75s)
+
+## 2026-05-12T15:08:04+00:00
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on DRUM BUS
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 1 params on DRUMS - Kick: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Kick: EQ Eight (skipped 0, failed 0)
+- Set 5 params on DRUMS - Kick: Saturator (skipped 0, failed 0)
+- Set 2 params on DRUMS - Kick: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 5 params on DRUMS - Kick: Utility (skipped 0, failed 0)
+- Set 1 params on DRUMS - Snare Clap: Drum Rack (skipped 0, failed 0)
+- Parameter profiles capped after 6 devices / 33 writes (time budget 45s)
+
+## 2026-05-12T17:09:27+00:00
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set monitoring on BASS BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 1 params on DRUMS - Kick: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Kick: EQ Eight (skipped 0, failed 0)
+- Set 5 params on DRUMS - Kick: Saturator (skipped 0, failed 0)
+- Set 2 params on DRUMS - Kick: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 5 params on DRUMS - Kick: Utility (skipped 0, failed 0)
+- Set 1 params on DRUMS - Snare Clap: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Snare Clap: EQ Eight (skipped 0, failed 0)
+- Set 7 params on DRUMS - Snare Clap: Compressor (skipped 0, failed 0)
+- Parameter profiles capped after 8 devices / 54 writes (time budget 75s)
+
+## 2026-05-12T19:01:04+00:00
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on DRUM BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 1 params on DRUMS - Kick: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Kick: EQ Eight (skipped 0, failed 0)
+- Set 5 params on DRUMS - Kick: Saturator (skipped 0, failed 0)
+- Set 2 params on DRUMS - Kick: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 5 params on DRUMS - Kick: Utility (skipped 0, failed 0)
+- Set 1 params on DRUMS - Snare Clap: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Snare Clap: EQ Eight (skipped 0, failed 0)
+- Set 7 params on DRUMS - Snare Clap: Compressor (skipped 0, failed 0)
+- Set 4 params on DRUMS - Snare Clap: Glue Compressor (skipped 0, failed 3: Ratio, Attack, Release)
+- Set 5 params on DRUMS - Snare Clap: Utility (skipped 0, failed 0)
+- Parameter profiles capped after 10 devices / 63 writes (device cap 10)
+
+## 2026-05-12T19:11:02+00:00
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on BASS BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on DRUM BUS
+- Set monitoring on VOCAL BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 1 params on DRUMS - Kick: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Kick: EQ Eight (skipped 0, failed 0)
+- Set 5 params on DRUMS - Kick: Saturator (skipped 0, failed 0)
+- Set 2 params on DRUMS - Kick: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 5 params on DRUMS - Kick: Utility (skipped 0, failed 0)
+- Set 1 params on DRUMS - Snare Clap: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Snare Clap: EQ Eight (skipped 0, failed 0)
+- Set 7 params on DRUMS - Snare Clap: Compressor (skipped 0, failed 0)
+- Parameter profiles capped after 8 devices / 54 writes (time budget 75s)
+
+## 2026-05-12T19:16:40+00:00
+- Added EQ Eight return-track profiles for SEND returns (HP12 + high-shelf cut) to keep verb/delay out of the vocal pocket.
+## 2026-05-12T21:10:30+00:00
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on VOCAL BUS
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on BASS BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 1 params on DRUMS - Kick: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Kick: EQ Eight (skipped 0, failed 0)
+- Set 5 params on DRUMS - Kick: Saturator (skipped 0, failed 0)
+- Set 2 params on DRUMS - Kick: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 5 params on DRUMS - Kick: Utility (skipped 0, failed 0)
+- Set 1 params on DRUMS - Snare Clap: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Snare Clap: EQ Eight (skipped 0, failed 0)
+- Set 7 params on DRUMS - Snare Clap: Compressor (skipped 0, failed 0)
+- Parameter profiles capped after 8 devices / 54 writes (time budget 75s)
+
+## 2026-05-12T21:14:38+00:00
+- Updated `Electric` device fallback to `Drift` (removed Wavetable/Operator fallbacks) so the MUSIC - Keys Pad placeholder stays deterministic under the current resolver rules.
+## 2026-05-12T23:14:42+00:00
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on DRUM BUS
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 1 params on DRUMS - Kick: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Kick: EQ Eight (skipped 0, failed 0)
+- Set 5 params on DRUMS - Kick: Saturator (skipped 0, failed 0)
+- Set 2 params on DRUMS - Kick: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 5 params on DRUMS - Kick: Utility (skipped 0, failed 0)
+- Set 1 params on DRUMS - Snare Clap: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Snare Clap: EQ Eight (skipped 0, failed 0)
+- Set 7 params on DRUMS - Snare Clap: Compressor (skipped 0, failed 0)
+- Parameter profiles capped after 8 devices / 55 writes (time budget 75s)
+
+## 2026-05-12T23:18:30+00:00
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on DRUM BUS
+- Set monitoring on BASS BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 1 params on DRUMS - Kick: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Kick: EQ Eight (skipped 0, failed 0)
+- Set 5 params on DRUMS - Kick: Saturator (skipped 0, failed 0)
+- Set 2 params on DRUMS - Kick: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 5 params on DRUMS - Kick: Utility (skipped 0, failed 0)
+- Set 1 params on DRUMS - Snare Clap: Drum Rack (skipped 0, failed 0)
+- Set 15 params on DRUMS - Snare Clap: EQ Eight (skipped 0, failed 0)
+- Set 7 params on DRUMS - Snare Clap: Compressor (skipped 0, failed 0)
+- Parameter profiles capped after 8 devices / 55 writes (time budget 75s)
+- Bus EQ Eight readback mismatch on BASS BUS: 1 Filter Type A expected 4 got 0; 1 Frequency A expected 24 got 0.285494
+- Bus EQ Eight readback mismatch on DRUM BUS: 1 Filter Type A expected 4 got 0; 1 Frequency A expected 28 got 0.285494
+- Bus EQ Eight readback mismatch on MUSIC BUS - Vocal Pocket: 1 Filter Type A expected 4 got 0; 1 Frequency A expected 95 got 0.292519
+- Bus EQ Eight readback mismatch on VOCAL BUS: 1 Filter Type A expected 4 got 0; 1 Frequency A expected 75 got 0.261804
+
+## 2026-05-13T01:16:59+00:00
+- Automation improvement: parameter-profile work now prioritizes EQ Eight on DRUM BUS, BASS BUS, MUSIC BUS - Vocal Pocket, and VOCAL BUS before non-EQ devices, so capped runs protect the vocal pocket first.
+- Live run used `--max-device-loads 0`; no new devices were requested or loaded.
+- Verification: focused unit tests and py_compile passed.
+- Next best improvement: fix EQ Eight readback verification to account for AbletonOSC-normalized frequency values and resolve the active EQ Eight instance before reporting bus mismatches.
+
+## 2026-05-13T01:13:47+00:00
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 4 params on DRUM BUS: Glue Compressor (skipped 0, failed 3: Ratio, Attack, Release)
+- Set 7 params on DRUM BUS: Compressor (skipped 0, failed 0)
+- Set 6 params on DRUM BUS: Solid Bus Comp (skipped 1, failed 0)
+- Set 5 params on DRUM BUS: Saturator (skipped 0, failed 0)
+- Set 2 params on DRUM BUS: Abbey Road Saturator Stereo (skipped 3, failed 0)
+- Set 5 params on DRUM BUS: Utility (skipped 0, failed 0)
+- Parameter profiles capped after 7 devices / 49 writes (time budget 75s)
+- Bus EQ Eight readback mismatch on BASS BUS: 1 Filter Type A expected 4 got 0; 1 Frequency A expected 24 got 0.285494
+- Bus EQ Eight readback mismatch on DRUM BUS: 1 Filter Type A expected 4 got 0; 1 Frequency A expected 28 got 0.133783
+- Bus EQ Eight readback mismatch on MUSIC BUS - Vocal Pocket: 1 Filter Type A expected 4 got 0; 1 Frequency A expected 95 got 0.292519
+- Bus EQ Eight readback mismatch on VOCAL BUS: 1 Filter Type A expected 4 got 0; 1 Frequency A expected 75 got 0.261804
+
+## 2026-05-13T01:16:48+00:00
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on BASS BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on DRUM BUS
+- Set monitoring on VOCAL BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Parameter read failed on BASS BUS: EQ Eight (track=9 device=0 err={'success': False, 'names': [], 'message': 'No response'})
+- Set 1 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 19, failed 0)
+- Set 15 params on VOCAL BUS: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 4 devices / 35 writes (time budget 75s)
+- Bus EQ Eight readback mismatch on BASS BUS: 1 Filter Type A expected 4 got 0; 1 Frequency A expected 24 got 0.285494
+- Bus EQ Eight readback mismatch on DRUM BUS: 1 Filter Type A expected 4 got 0; 1 Frequency A expected 28 got 0.133783
+- Bus EQ Eight readback mismatch on MUSIC BUS - Vocal Pocket: 1 Filter Type A expected 4 got 0; 1 Frequency A expected 95 got 0.292519
+- Bus EQ Eight readback mismatch on VOCAL BUS: 1 Filter Type A expected 4 got 0; 1 Frequency A expected 75 got 0.261804
+
+## 2026-05-13T03:16:23+00:00
+- Automation improvement: bus EQ Eight readback now resolves an exact EQ Eight device with required params and compares frequency targets as AbletonOSC-normalized values.
+- Why this improves the vocal-ready beat template: verification no longer reports false frequency mismatches, so recurring runs can distinguish real bus HP filter-type failures from normal AbletonOSC frequency scaling.
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on BASS BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set monitoring on DRUM BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 20 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 58 writes (time budget 75s)
+- Bus EQ Eight readback mismatch on BASS BUS: 1 Filter Type A expected 4 got 0
+- Bus EQ Eight readback mismatch on DRUM BUS: 1 Filter Type A expected 4 got 0
+- Bus EQ Eight readback mismatch on MUSIC BUS - Vocal Pocket: 1 Filter Type A expected 4 got 0
+- Bus EQ Eight readback mismatch on VOCAL BUS: 1 Filter Type A expected 4 got 0
+- Next best improvement: investigate EQ Eight filter-type enum writes/readback; HP12 should be type 4, but the bus readback still returns 0 after successful parameter writes.
+## 2026-05-13T05:17:33+00:00
+- Automation improvement: BASS - Sub 808 now requests Drift directly instead of listing Operator in the vocal-ready template device chain.
+- Why it improves vocal-ready beat creation: the bass placeholder stays on the verified stock synth path and avoids fuzzy Operator resolver behavior while preserving sub/808 intent.
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on DRUM BUS
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 20 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 56 writes (time budget 75s)
+- Bus EQ Eight readback mismatch on BASS BUS: 1 Filter Type A expected 4 got 0
+- Bus EQ Eight readback mismatch on DRUM BUS: 1 Filter Type A expected 4 got 0
+- Bus EQ Eight readback mismatch on MUSIC BUS - Vocal Pocket: 1 Filter Type A expected 4 got 0
+- Bus EQ Eight readback mismatch on VOCAL BUS: 1 Filter Type A expected 4 got 0
+- Next best improvement: investigate EQ Eight filter-type enum writes/readback; HP12 should be type 4, but the bus readback still returns 0 after successful parameter writes.
+## 2026-05-13T07:20:41+00:00
+- Automation improvement: MUSIC BUS - Vocal Pocket EQ Eight profile now adds a fifth bell cut at 1.45 kHz (-1.1 dB) for lower-presence vocal clearance.
+- Why it improves vocal-ready beat creation: the instrumental bus now has a dedicated lower-presence carve so pads, chords, and hooks leave more articulation space for lead vocals.
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set monitoring on BASS BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 58 writes (time budget 75s)
+- Bus EQ Eight readback mismatch on BASS BUS: 1 Filter Type A expected 4 got 0
+- Bus EQ Eight readback mismatch on DRUM BUS: 1 Filter Type A expected 4 got 0
+- Bus EQ Eight readback mismatch on MUSIC BUS - Vocal Pocket: 1 Filter Type A expected 4 got 0
+- Bus EQ Eight readback mismatch on VOCAL BUS: 1 Filter Type A expected 4 got 0
+- Next best improvement: add bridge support for naming and addressing return tracks so SEND - Short Plate, SEND - Slap Delay, and SEND - Parallel Drum Comp can be created and verified as true returns.
+## 2026-05-13T09:23:01+00:00
+- Automation improvement: EQ Eight filter-type parameters now normalize as raw enum values before generic filter/frequency handling.
+- Why it improves vocal-ready beat creation: bus HP12 low cuts now write as verified filter type 4, so drum, bass, music, and vocal buses keep their intended vocal-space high-pass behavior.
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on DRUM BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 58 writes (time budget 75s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Next best improvement: add bridge support for naming and addressing return tracks so SEND - Short Plate, SEND - Slap Delay, and SEND - Parallel Drum Comp can be created and verified as true returns.
+## 2026-05-13T11:21:36+00:00
+- Automation improvement: REFERENCE / PRINT is now explicitly muted by template metadata and applied by the improvement script.
+- Why it improves vocal-ready beat creation: imported references and rough prints cannot leak into the beat balance or mask vocal-pocket decisions while writing.
+- Muted REFERENCE / PRINT
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on VOCAL BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on DRUM BUS
+- Set monitoring on BASS BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 58 writes (time budget 75s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Verification: tests.test_vocal_ready_template and py_compile passed; live run used --max-device-loads 0.
+- Next best improvement: add bridge support for naming and addressing return tracks; current AbletonOSC probes returned Unknown OSC address for return-list/name endpoints.
+## 2026-05-13T13:22:17+00:00
+- Automation improvement: send slot 1 now maps deterministically to SEND - Slap Delay instead of the longer hall return.
+- Why it improves vocal-ready beat creation: default vocal/music send levels now favor short plate plus filtered slap delay ambience, leaving more lead-vocal space than a long hall wash.
+- Muted REFERENCE / PRINT
+- Applied color and conservative volume defaults to template tracks
+- Set monitoring on DRUM BUS
+- Set monitoring on BASS BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 55 writes (time budget 75s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Verification: tests.test_vocal_ready_template and py_compile passed; live run used --max-device-loads 0.
+- Next best improvement: add bridge support for naming and addressing return tracks so SEND - Short Plate, SEND - Slap Delay, and SEND - Parallel Drum Comp can be created and verified as true returns.
+## 2026-05-13T15:24:15+00:00
+- Automation improvement: MUSIC - Keys Pad now requests Drift directly instead of trying Electric before the fallback.
+- Why it improves vocal-ready beat creation: the keys/pad placeholder stays on the same verified stock synth path as the other instrumental placeholders, reducing resolver ambiguity while preserving vocal-pocket pad intent.
+- Muted REFERENCE / PRINT
+- Applied color and conservative volume defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set monitoring on BASS BUS
+- Set monitoring on DRUM BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 55 writes (time budget 75s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Verification: tests.test_vocal_ready_template, py_compile, json.tool, and live run passed; live run used --max-device-loads 0.
+- Next best improvement: add bridge support for naming and addressing return tracks so SEND - Short Plate, SEND - Slap Delay, and SEND - Parallel Drum Comp can be created and verified as true returns.
+## 2026-05-13T17:25:09+00:00
+- Automation improvement: routing now includes supplemental template-family tracks by prefix, so added BASS -, DRUMS -, MUSIC -, and VOCAL - lanes land on their matching buses.
+- Why it improves vocal-ready beat creation: printed 808/audio layers and extra writing lanes inherit the same bus EQ, send, and vocal-pocket behavior instead of bypassing the template mix structure.
+- Muted REFERENCE / PRINT
+- Applied color and conservative volume defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Routed BASS - Boomin 808 Floor Audio to BASS BUS
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 55 writes (time budget 75s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Verification: tests.test_vocal_ready_template, py_compile, json.tool, and live run passed; live run used --max-device-loads 0.
+- Next best improvement: add bridge support for naming and addressing return tracks so SEND - Short Plate, SEND - Slap Delay, and SEND - Parallel Drum Comp can be created and verified as true returns.
+## 2026-05-13T19:27:23+00:00
+- Automation improvement: default SEND_PLAN levels now get read back after writes, so the template verifies short-plate and slap-delay ambience instead of assuming send commands landed.
+- Why it improves vocal-ready beat creation: vocal and music placeholders keep controlled ambience without silently over-washing or bypassing the intended vocal pocket.
+- Muted REFERENCE / PRINT
+- Applied color and conservative volume defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on DRUM BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 55 writes (time budget 75s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+- Verification: tests.test_vocal_ready_template, py_compile, json.tool, and live run passed; live run used --max-device-loads 0.
+- Next best improvement: add bridge support for naming and addressing return tracks so SEND - Short Plate, SEND - Slap Delay, and SEND - Parallel Drum Comp can be created and verified as true returns.
+## 2026-05-13T21:27:23+00:00
+- Muted REFERENCE / PRINT
+- Applied color and conservative volume defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on BASS BUS
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: template routing now gets read back after writes, including supplemental DRUMS/BASS/MUSIC/VOCAL lanes.
+- Why it improves vocal-ready beat creation: added beat layers stay on the intended buses instead of bypassing the vocal-pocket routing plan silently.
+- Verified template routing readback on BASS - Boomin 808 Floor Audio -> BASS BUS
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 55 writes (time budget 75s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+- Verification: tests.test_vocal_ready_template, py_compile, json.tool, and live run passed; live run used --max-device-loads 0.
+- Next best improvement: add bridge support for naming and addressing return tracks so SEND - Short Plate, SEND - Slap Delay, and SEND - Parallel Drum Comp can be created and verified as true returns.
+## 2026-05-13T23:27:08+00:00
+- Created track: DRUMS - Kick
+- Created track: DRUMS - Snare Clap
+- Created track: DRUMS - Hats Perc Top
+- Created track: DRUM BUS
+- Created track: BASS - Sub 808
+- Created track: BASS BUS
+- Created track: MUSIC - Chords
+- Created track: MUSIC - Keys Pad
+- Created track: MUSIC - Lead Hook
+- Created track: MUSIC BUS - Vocal Pocket
+- Created track: VOCAL - Lead Placeholder
+- Created track: VOCAL - Doubles Adlibs
+- Created track: VOCAL BUS
+- Created track: FX - Transitions Texture
+- Created track: REFERENCE / PRINT
+- Muted REFERENCE / PRINT
+- Applied color and conservative volume defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Routing unavailable for DRUMS - Kick -> DRUM BUS
+- Routing unavailable for DRUMS - Snare Clap -> DRUM BUS
+- Routing unavailable for DRUMS - Hats Perc Top -> DRUM BUS
+- Routing unavailable for BASS - Sub 808 -> BASS BUS
+- Routing unavailable for MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Routed VOCAL - Lead Placeholder to VOCAL BUS
+- Routed VOCAL - Doubles Adlibs to VOCAL BUS
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: DRUM BUS now has a conservative default send to SEND - Parallel Drum Comp.
+- Why it improves vocal-ready beat creation: parallel drum density can be blended from the bus without raising dry drum levels into the vocal pocket.
+- Template routing readback mismatch on BASS - Sub 808: expected BASS BUS got No Output
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Template routing readback mismatch on DRUMS - Hats Perc Top: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Kick: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Snare Clap: expected DRUM BUS got No Output
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Template routing readback mismatch on MUSIC - Chords: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Keys Pad: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Lead Hook: expected MUSIC BUS - Vocal Pocket got No Output
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Bus EQ verification skipped on BASS BUS: EQ Eight not found
+- Bus EQ verification skipped on DRUM BUS: EQ Eight not found
+- Bus EQ verification skipped on MUSIC BUS - Vocal Pocket: EQ Eight not found
+- Bus EQ verification skipped on VOCAL BUS: EQ Eight not found
+- Template send readback mismatch on DRUM BUS: SEND - Parallel Drum Comp=error({'success': False, 'level': None, 'message': 'No response from Ableton (timeout)'})
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+- Verification: tests.test_vocal_ready_template, py_compile, json.tool, and live run passed; live run used --max-device-loads 0.
+- Next best improvement: repair source-track output routing writes so DRUMS/BASS/MUSIC lanes do not read back as No Output.
+
+## 2026-05-13T23:28:36+00:00
+- Muted REFERENCE / PRINT
+- Applied color and conservative volume defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Routing unavailable for DRUMS - Kick -> DRUM BUS
+- Routing unavailable for DRUMS - Snare Clap -> DRUM BUS
+- Routing unavailable for DRUMS - Hats Perc Top -> DRUM BUS
+- Routing unavailable for BASS - Sub 808 -> BASS BUS
+- Routing unavailable for MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set monitoring on DRUM BUS
+- Set monitoring on BASS BUS
+- Send update skipped for DRUM BUS -> SEND - Parallel Drum Comp: return slot unavailable
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: DRUM BUS now has a conservative default send to SEND - Parallel Drum Comp.
+- Why it improves vocal-ready beat creation: parallel drum density can be blended from the bus without raising dry drum levels into the vocal pocket.
+- Template routing readback mismatch on BASS - Sub 808: expected BASS BUS got No Output
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Template routing readback mismatch on DRUMS - Hats Perc Top: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Kick: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Snare Clap: expected DRUM BUS got No Output
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Template routing readback mismatch on MUSIC - Chords: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Keys Pad: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Lead Hook: expected MUSIC BUS - Vocal Pocket got No Output
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Bus EQ verification skipped on BASS BUS: EQ Eight not found
+- Bus EQ verification skipped on DRUM BUS: EQ Eight not found
+- Bus EQ verification skipped on MUSIC BUS - Vocal Pocket: EQ Eight not found
+- Bus EQ verification skipped on VOCAL BUS: EQ Eight not found
+- Template send readback mismatch on DRUM BUS: SEND - Parallel Drum Comp=error({'success': False, 'level': None, 'message': 'No response from Ableton (timeout)'})
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+- Best next improvement: load route-enabling Drift placeholders for MUSIC - Keys Pad and MUSIC - Lead Hook, then verify MUSIC BUS routing readback.
+
+## 2026-05-13T23:30:28+00:00
+- Muted REFERENCE / PRINT
+- Applied color and conservative volume defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Routing unavailable for DRUMS - Kick -> DRUM BUS
+- Routing unavailable for DRUMS - Snare Clap -> DRUM BUS
+- Routing unavailable for DRUMS - Hats Perc Top -> DRUM BUS
+- Routing unavailable for BASS - Sub 808 -> BASS BUS
+- Routing unavailable for MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on DRUM BUS
+- Send update skipped for DRUM BUS -> SEND - Parallel Drum Comp: return slot unavailable
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: DRUM BUS now has a conservative default send to SEND - Parallel Drum Comp.
+- Why it improves vocal-ready beat creation: parallel drum density can be blended from the bus without raising dry drum levels into the vocal pocket.
+- Template routing readback mismatch on BASS - Sub 808: expected BASS BUS got No Output
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Template routing readback mismatch on DRUMS - Hats Perc Top: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Kick: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Snare Clap: expected DRUM BUS got No Output
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Template routing readback mismatch on MUSIC - Chords: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Keys Pad: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Lead Hook: expected MUSIC BUS - Vocal Pocket got No Output
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Bus EQ verification skipped on BASS BUS: EQ Eight not found
+- Bus EQ verification skipped on DRUM BUS: EQ Eight not found
+- Bus EQ verification skipped on MUSIC BUS - Vocal Pocket: EQ Eight not found
+- Bus EQ verification skipped on VOCAL BUS: EQ Eight not found
+- Template send readback skipped on DRUM BUS: SEND - Parallel Drum Comp=return slot unavailable
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+- Best next improvement: fix DRUM BUS Glue Compressor parameter mapping/readback so ratio, attack, release, and threshold verify after writes.
+
+## 2026-05-14T01:28:37+00:00
+- Muted REFERENCE / PRINT
+- Applied color and conservative volume defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Routing unavailable for DRUMS - Kick -> DRUM BUS
+- Routing unavailable for DRUMS - Snare Clap -> DRUM BUS
+- Routing unavailable for DRUMS - Hats Perc Top -> DRUM BUS
+- Routing unavailable for BASS - Sub 808 -> BASS BUS
+- Routing unavailable for MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Created return slot 2 for send 2
+- Created return slot 3 for send 3
+- Created return slot 4 for SEND - Parallel Drum Comp
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: template send setup now creates missing return slots before writing send levels.
+- Why it improves vocal-ready beat creation: short-plate, slap-delay, and parallel-drum sends become addressable instead of silently timing out when the Live set has too few return tracks.
+- Template routing readback mismatch on BASS - Sub 808: expected BASS BUS got No Output
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Template routing readback mismatch on DRUMS - Hats Perc Top: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Kick: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Snare Clap: expected DRUM BUS got No Output
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Template routing readback mismatch on MUSIC - Chords: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Keys Pad: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Lead Hook: expected MUSIC BUS - Vocal Pocket got No Output
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Bus EQ verification skipped on BASS BUS: EQ Eight not found
+- Bus EQ verification skipped on DRUM BUS: EQ Eight not found
+- Bus EQ verification skipped on MUSIC BUS - Vocal Pocket: EQ Eight not found
+- Bus EQ verification skipped on VOCAL BUS: EQ Eight not found
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+- Best next improvement: fix Glue Compressor threshold writes so DRUM BUS readback displays the intended -10 dB glue threshold.
+
+## 2026-05-14T03:30:00+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Routing unavailable for DRUMS - Kick -> DRUM BUS
+- Routing unavailable for DRUMS - Snare Clap -> DRUM BUS
+- Routing unavailable for DRUMS - Hats Perc Top -> DRUM BUS
+- Routing unavailable for BASS - Sub 808 -> BASS BUS
+- Routing unavailable for MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set monitoring on BASS BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: support lanes now get conservative starter pan defaults.
+- Why it improves vocal-ready beat creation: hats, music support, doubles, and transition textures start slightly off-center so kick, bass, lead vocal, and buses keep the center lane.
+- Template routing readback mismatch on BASS - Sub 808: expected BASS BUS got No Output
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Template routing readback mismatch on DRUMS - Hats Perc Top: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Kick: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Snare Clap: expected DRUM BUS got No Output
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Template routing readback mismatch on MUSIC - Chords: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Keys Pad: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Lead Hook: expected MUSIC BUS - Vocal Pocket got No Output
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Bus EQ verification skipped on BASS BUS: EQ Eight not found
+- Bus EQ verification skipped on DRUM BUS: EQ Eight not found
+- Bus EQ verification skipped on MUSIC BUS - Vocal Pocket: EQ Eight not found
+- Bus EQ verification skipped on VOCAL BUS: EQ Eight not found
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T05:32:45+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- DRUMS - Kick: Loaded Drum Rack
+- DRUMS - Snare Clap: Loaded Drum Rack
+- DRUMS - Hats Perc Top: Loaded Drum Rack
+- BASS - Sub 808: Loaded Drift
+- Stopped device loading at max_device_loads for this run
+- Routed DRUMS - Kick to DRUM BUS
+- Routed DRUMS - Snare Clap to DRUM BUS
+- Routed DRUMS - Hats Perc Top to DRUM BUS
+- Routed BASS - Sub 808 to BASS BUS
+- Routed MUSIC - Chords to MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Set monitoring on DRUM BUS
+- Set monitoring on BASS BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: MUSIC - Keys Pad and MUSIC - Lead Hook now have route-enabling Drift placeholders.
+- Why it improves vocal-ready beat creation: all core music source lanes now produce audio and verify into MUSIC BUS - Vocal Pocket, keeping the instrumental carve point usable for vocal space.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Template routing readback mismatch on MUSIC - Keys Pad: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Lead Hook: expected MUSIC BUS - Vocal Pocket got No Output
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 1 params on DRUMS - Kick: Drum Rack (skipped 0, failed 0)
+- Set 1 params on DRUMS - Snare Clap: Drum Rack (skipped 0, failed 0)
+- Set 1 params on DRUMS - Hats Perc Top: Drum Rack (skipped 0, failed 0)
+- Set 1 params on BASS - Sub 808: Drift (skipped 0, failed 0)
+- Set 1 params on MUSIC - Chords: Drift (skipped 0, failed 0)
+- Bus EQ verification skipped on BASS BUS: EQ Eight not found
+- Bus EQ verification skipped on DRUM BUS: EQ Eight not found
+- Bus EQ verification skipped on MUSIC BUS - Vocal Pocket: EQ Eight not found
+- Bus EQ verification skipped on VOCAL BUS: EQ Eight not found
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+- Best next improvement: load or restore EQ Eight on the four bus tracks, then verify bus HP readback with the known HP12 mapping.
+
+## 2026-05-14T09:33:13+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- MUSIC - Keys Pad: Loaded Drift
+- MUSIC - Lead Hook: Loaded Drift
+- Stopped device loading at max_device_loads for this run
+- Routed MUSIC - Keys Pad to MUSIC BUS - Vocal Pocket
+- Routed MUSIC - Lead Hook to MUSIC BUS - Vocal Pocket
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set monitoring on BASS BUS
+- Set monitoring on DRUM BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: MIDI source lanes now load route-enabling starter instruments before downstream effects.
+- Why it improves vocal-ready beat creation: conservative device caps now make more beat lanes audio-routeable to DRUM/BASS/MUSIC buses instead of spending the cap on one lane's full chain.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 1 params on DRUMS - Kick: Drum Rack (skipped 0, failed 0)
+- Set 1 params on DRUMS - Snare Clap: Drum Rack (skipped 0, failed 0)
+- Set 1 params on DRUMS - Hats Perc Top: Drum Rack (skipped 0, failed 0)
+- Set 1 params on BASS - Sub 808: Drift (skipped 0, failed 0)
+- Set 1 params on MUSIC - Chords: Drift (skipped 0, failed 0)
+- Set 1 params on MUSIC - Keys Pad: Drift (skipped 0, failed 0)
+- Set 1 params on MUSIC - Lead Hook: Drift (skipped 0, failed 0)
+- Bus EQ verification skipped on BASS BUS: EQ Eight not found
+- Bus EQ verification skipped on DRUM BUS: EQ Eight not found
+- Bus EQ verification skipped on MUSIC BUS - Vocal Pocket: EQ Eight not found
+- Bus EQ verification skipped on VOCAL BUS: EQ Eight not found
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T11:34:17+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- BASS BUS: Loaded EQ Eight
+- DRUM BUS: Loaded EQ Eight
+- MUSIC BUS - Vocal Pocket: Loaded EQ Eight
+- VOCAL BUS: Loaded EQ Eight
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on VOCAL BUS
+- Set monitoring on BASS BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on DRUM BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: bus EQ Eight devices now load before lower-priority source effects.
+- Why it improves vocal-ready beat creation: conservative device caps now restore the drum, bass, music, and vocal bus high-pass/profile checkpoints that keep space carved for the lead vocal.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 2 devices / 51 writes (time budget 75s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Bus EQ Eight readback mismatch on VOCAL BUS: 1 Filter Type A expected 4 got 2; 1 Frequency A expected 75Hz/0.261804 normalized got 0.142747
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T11:37:20+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on BASS BUS
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: bus EQ Eight devices now load before lower-priority source effects.
+- Why it improves vocal-ready beat creation: conservative device caps now restore the drum, bass, music, and vocal bus high-pass/profile checkpoints that keep space carved for the lead vocal.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Set 15 params on VOCAL BUS: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 4 devices / 70 writes (device cap 4)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T13:36:35+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- DRUM BUS: Loaded Glue Compressor
+- MUSIC BUS - Vocal Pocket: Loaded Compressor
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on DRUM BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on BASS BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: bus dynamics now load before lower-priority source effects after bus EQ checkpoints.
+- Why it improves vocal-ready beat creation: conservative device caps now restore drum glue and music-bus control so beat density can support a vocal without crowding it.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 2 devices / 51 writes (time budget 75s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T15:41:12+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on DRUM BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on BASS BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: priority bus dynamics now get post-profile readback verification.
+- Why it improves vocal-ready beat creation: drum glue and music-bus compression settings are now checked after writes so beat density supports the vocal pocket predictably.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 61 writes (time budget 90s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Bus dynamics readback mismatch on DRUM BUS: Threshold expected 0.6 got 0; Ratio expected 0.5 got 1; Attack expected 0.612593 got 3; Release expected 0.236675 got 3...
+- Bus dynamics readback mismatch on MUSIC BUS - Vocal Pocket: Threshold expected 0.441176 got 0.85; Ratio expected 0.525 got 0.75; Attack expected 0.629642 got 0.4; Release expected 0.266015 got 0.156993...
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T15:44:58+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set monitoring on BASS BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: priority bus dynamics now get post-profile readback verification.
+- Why it improves vocal-ready beat creation: drum glue and music-bus compression settings are now checked after writes so beat density supports the vocal pocket predictably.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Set 15 params on VOCAL BUS: EQ Eight (skipped 0, failed 0)
+- Set 4 params on DRUM BUS: Glue Compressor (skipped 0, failed 3: Ratio, Attack, Release)
+- Set 7 params on MUSIC BUS - Vocal Pocket: Compressor (skipped 0, failed 0)
+- Parameter profiles capped after 6 devices / 84 writes (device cap 6)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Bus dynamics readback mismatch on DRUM BUS: Threshold expected 0.6 got 0; Ratio expected 0.5 got 0; Attack expected 0.612593 got 0; Release expected 0.236675 got 0
+- Verified bus dynamics readback on MUSIC BUS - Vocal Pocket: Compressor
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T17:40:24+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on BASS BUS
+- Set monitoring on DRUM BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: Glue Compressor semantic fallback indices now match the local Ableton parameter order.
+- Why it improves vocal-ready beat creation: DRUM BUS glue writes now target Attack, Ratio, Release, and Dry/Wet instead of stale fallback slots, keeping drum density controlled around the vocal pocket.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 1 devices / 27 writes (time budget 45s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Bus dynamics readback mismatch on DRUM BUS: Threshold expected 0.6 got 0; Ratio expected 0.5 got 0; Attack expected 0.612593 got 0; Release expected 0.236675 got 0
+- Verified bus dynamics readback on MUSIC BUS - Vocal Pocket: Compressor
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T19:40:17+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set monitoring on BASS BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: priority bus dynamics verification now records Glue Compressor display value strings through the bridge.
+- Why it improves vocal-ready beat creation: DRUM BUS glue settings can now be verified in musical display units, making drum density checks clearer than raw enum readbacks around the vocal pocket.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 1 devices / 15 writes (device cap 1)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Verified bus dynamics readback on DRUM BUS: Glue Compressor (Threshold=0.00 dB; Ratio=2; Attack=10; Release=.1; Dry/Wet=55 %)
+- Verified bus dynamics readback on MUSIC BUS - Vocal Pocket: Compressor
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T19:43:58+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on DRUM BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on BASS BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: priority bus dynamics verification now records Glue Compressor display value strings through the bridge.
+- Why it improves vocal-ready beat creation: DRUM BUS glue settings can now be verified in musical display units, making drum density checks clearer than raw enum readbacks around the vocal pocket.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 60 writes (time budget 90s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Bus dynamics readback mismatch on DRUM BUS: Threshold display expected -10 got 0.00 dB
+- Verified bus dynamics readback on MUSIC BUS - Vocal Pocket: Compressor
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T21:41:18+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on BASS BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on DRUM BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: Glue Compressor threshold writes now use raw dB for the local negative-only Ableton range.
+- Why it improves vocal-ready beat creation: DRUM BUS glue can land at the intended -10 dB threshold instead of snapping to 0 dB, keeping drum density behind the vocal pocket.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 3 devices / 58 writes (time budget 90s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Bus dynamics readback mismatch on DRUM BUS: Threshold display expected -10 got 0.00 dB
+- Verified bus dynamics readback on MUSIC BUS - Vocal Pocket: Compressor
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T21:44:49+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on DRUM BUS
+- Set monitoring on BASS BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: Glue Compressor threshold writes now use raw dB for the local negative-only Ableton range.
+- Why it improves vocal-ready beat creation: DRUM BUS glue can land at the intended -10 dB threshold instead of snapping to 0 dB, keeping drum density behind the vocal pocket.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Set 15 params on VOCAL BUS: EQ Eight (skipped 0, failed 0)
+- Set 7 params on DRUM BUS: Glue Compressor (skipped 0, failed 0)
+- Set 7 params on MUSIC BUS - Vocal Pocket: Compressor (skipped 0, failed 0)
+- Parameter profiles capped after 6 devices / 84 writes (device cap 6)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Bus dynamics readback mismatch on DRUM BUS: Threshold expected 0 got -10
+- Verified bus dynamics readback on MUSIC BUS - Vocal Pocket: Compressor
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T21:48:40+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on VOCAL BUS
+- Set monitoring on BASS BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on DRUM BUS
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: Glue Compressor threshold writes now use raw dB for the local negative-only Ableton range.
+- Why it improves vocal-ready beat creation: DRUM BUS glue can land at the intended -10 dB threshold instead of snapping to 0 dB, keeping drum density behind the vocal pocket.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Set 25 params on MUSIC BUS - Vocal Pocket: EQ Eight (skipped 0, failed 0)
+- Set 15 params on VOCAL BUS: EQ Eight (skipped 0, failed 0)
+- Set 7 params on DRUM BUS: Glue Compressor (skipped 0, failed 0)
+- Set 7 params on MUSIC BUS - Vocal Pocket: Compressor (skipped 0, failed 0)
+- Parameter profiles capped after 6 devices / 84 writes (device cap 6)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Verified bus dynamics readback on DRUM BUS: Glue Compressor (Threshold=-10.0 dB; Ratio=2; Attack=10; Release=.1; Dry/Wet=55 %)
+- Verified bus dynamics readback on MUSIC BUS - Vocal Pocket: Compressor
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-14T23:42:20+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Set monitoring on DRUM BUS
+- Set monitoring on VOCAL BUS
+- Set monitoring on BASS BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: SEND - Parallel Drum Comp now has an explicit EQ Eight profile for sub-rumble cleanup, low-mid control, and cymbal softening.
+- Why it improves vocal-ready beat creation: parallel drum density can be blended without adding rumble, boxiness, or top-end hash into the vocal pocket.
+- Verified template routing readback on BASS - Sub 808 -> BASS BUS
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Verified template routing readback on DRUMS - Hats Perc Top -> DRUM BUS
+- Verified template routing readback on DRUMS - Kick -> DRUM BUS
+- Verified template routing readback on DRUMS - Snare Clap -> DRUM BUS
+- Verified template routing readback on FX - Transitions Texture -> Master
+- Verified template routing readback on MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on DRUM BUS: EQ Eight (skipped 0, failed 0)
+- Set 15 params on BASS BUS: EQ Eight (skipped 0, failed 0)
+- Parameter profiles capped after 2 devices / 48 writes (time budget 75s)
+- Verified bus EQ Eight readback on BASS BUS
+- Verified bus EQ Eight readback on DRUM BUS
+- Verified bus EQ Eight readback on MUSIC BUS - Vocal Pocket
+- Verified bus EQ Eight readback on VOCAL BUS
+- Verified bus dynamics readback on DRUM BUS: Glue Compressor (Threshold=-10.0 dB; Ratio=2; Attack=10; Release=.1; Dry/Wet=55 %)
+- Verified bus dynamics readback on MUSIC BUS - Vocal Pocket: Compressor
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+
+## 2026-05-15T01:43:12+00:00
+- Created track: FX - Transitions Texture
+- Created track: REFERENCE / PRINT
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Routing unavailable for DRUMS - Kick -> DRUM BUS
+- Routing unavailable for DRUMS - Snare Clap -> DRUM BUS
+- Routing unavailable for DRUMS - Hats Perc Top -> DRUM BUS
+- Routing unavailable for BASS - Sub 808 -> BASS BUS
+- Routing unavailable for MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Routed VOCAL - Lead Placeholder to VOCAL BUS
+- Routed VOCAL - Doubles Adlibs to VOCAL BUS
+- Routed FX - Transitions Texture to MUSIC BUS - Vocal Pocket
+- Set monitoring on DRUM BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set monitoring on BASS BUS
+- Created return slot 2 for send 2
+- Created return slot 3 for send 3
+- Created return slot 4 for SEND - Parallel Drum Comp
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: FX - Transitions Texture now routes through MUSIC BUS - Vocal Pocket instead of directly to Master.
+- Why it improves vocal-ready beat creation: risers, impacts, and ear-candy textures now pass through the same instrumental carve point as music layers, keeping transitional energy from bypassing vocal-pocket EQ and dynamics.
+- Template routing readback mismatch on BASS - Sub 808: expected BASS BUS got No Output
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Template routing readback mismatch on DRUMS - Hats Perc Top: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Kick: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Snare Clap: expected DRUM BUS got No Output
+- Verified template routing readback on FX - Transitions Texture -> MUSIC BUS - Vocal Pocket
+- Template routing readback mismatch on MUSIC - Chords: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Keys Pad: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Lead Hook: expected MUSIC BUS - Vocal Pocket got No Output
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Bus EQ verification skipped on BASS BUS: EQ Eight not found
+- Bus EQ verification skipped on DRUM BUS: EQ Eight not found
+- Bus EQ verification skipped on MUSIC BUS - Vocal Pocket: EQ Eight not found
+- Bus EQ verification skipped on VOCAL BUS: EQ Eight not found
+- Bus dynamics verification skipped on DRUM BUS: Glue Compressor not found
+- Bus dynamics verification skipped on MUSIC BUS - Vocal Pocket: Compressor not found
+- Template send readback mismatch on DRUM BUS: SEND - Parallel Drum Comp expected 0.1 got 0
+- Template send readback mismatch on DRUMS - Snare Clap: SEND - Short Plate expected 0.08 got 0
+- Template send readback mismatch on DRUMS - Hats Perc Top: SEND - Short Plate expected 0.03 got 0
+- Template send readback mismatch on MUSIC - Keys Pad: SEND - Short Plate expected 0.06 got 0; SEND - Slap Delay expected 0.04 got 0
+- Template send readback mismatch on MUSIC - Lead Hook: SEND - Short Plate expected 0.04 got 0; SEND - Slap Delay expected 0.06 got 0
+- Template send readback mismatch on VOCAL - Lead Placeholder: SEND - Short Plate expected 0.18 got 0; SEND - Slap Delay expected 0.12 got 0
+- Template send readback mismatch on VOCAL - Doubles Adlibs: SEND - Short Plate expected 0.14 got 0; SEND - Slap Delay expected 0.18 got 0
+
+## 2026-05-15T03:44:05+00:00
+- Muted REFERENCE / PRINT
+- Applied color, conservative volume, and starter pan defaults to template tracks
+- Stopped device loading at max_device_loads for this run
+- Routing unavailable for DRUMS - Kick -> DRUM BUS
+- Routing unavailable for DRUMS - Snare Clap -> DRUM BUS
+- Routing unavailable for DRUMS - Hats Perc Top -> DRUM BUS
+- Routing unavailable for BASS - Sub 808 -> BASS BUS
+- Routing unavailable for MUSIC - Chords -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Keys Pad -> MUSIC BUS - Vocal Pocket
+- Routing unavailable for MUSIC - Lead Hook -> MUSIC BUS - Vocal Pocket
+- Set monitoring on VOCAL BUS
+- Set monitoring on DRUM BUS
+- Set monitoring on BASS BUS
+- Set monitoring on MUSIC BUS - Vocal Pocket
+- Set send 4 on DRUM BUS to 0.1
+- Set send 0 on DRUMS - Snare Clap to 0.08
+- Set send 0 on DRUMS - Hats Perc Top to 0.03
+- Set send 0 on MUSIC - Keys Pad to 0.06
+- Set send 1 on MUSIC - Keys Pad to 0.04
+- Set send 0 on MUSIC - Lead Hook to 0.04
+- Set send 1 on MUSIC - Lead Hook to 0.06
+- Set send 3 on FX - Transitions Texture to 0.05
+- Set send 0 on VOCAL - Lead Placeholder to 0.18
+- Set send 1 on VOCAL - Lead Placeholder to 0.12
+- Set send 0 on VOCAL - Doubles Adlibs to 0.14
+- Set send 1 on VOCAL - Doubles Adlibs to 0.18
+- Automation improvement: FX - Transitions Texture now gets a low default send to SEND - Throw Delay.
+- Why it improves vocal-ready beat creation: transition ear-candy can bloom into the filtered throw return without washing the lead-vocal center or bypassing the music-bus vocal-pocket carve.
+- Template routing readback mismatch on BASS - Sub 808: expected BASS BUS got No Output
+- Verified template routing readback on BASS BUS -> Master
+- Verified template routing readback on DRUM BUS -> Master
+- Template routing readback mismatch on DRUMS - Hats Perc Top: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Kick: expected DRUM BUS got No Output
+- Template routing readback mismatch on DRUMS - Snare Clap: expected DRUM BUS got No Output
+- Verified template routing readback on FX - Transitions Texture -> MUSIC BUS - Vocal Pocket
+- Template routing readback mismatch on MUSIC - Chords: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Keys Pad: expected MUSIC BUS - Vocal Pocket got No Output
+- Template routing readback mismatch on MUSIC - Lead Hook: expected MUSIC BUS - Vocal Pocket got No Output
+- Verified template routing readback on MUSIC BUS - Vocal Pocket -> Master
+- Verified template routing readback on REFERENCE / PRINT -> Master
+- Verified template routing readback on VOCAL - Doubles Adlibs -> VOCAL BUS
+- Verified template routing readback on VOCAL - Lead Placeholder -> VOCAL BUS
+- Verified template routing readback on VOCAL BUS -> Master
+- Set 15 params on VOCAL BUS: EQ Eight (skipped 0, failed 0)
+- Set 1 params on VOCAL BUS: Test Vocal 5-14 (skipped 0, failed 0)
+- Set 7 params on VOCAL BUS: Compressor (skipped 0, failed 0)
+- Set 1 params on VOCAL BUS: CLA Vocals Stereo (skipped 0, failed 0)
+- Set 5 params on VOCAL BUS: Utility (skipped 0, failed 0)
+- Bus EQ verification skipped on BASS BUS: EQ Eight not found
+- Bus EQ verification skipped on DRUM BUS: EQ Eight not found
+- Bus EQ verification skipped on MUSIC BUS - Vocal Pocket: EQ Eight not found
+- Verified bus EQ Eight readback on VOCAL BUS
+- Bus dynamics verification skipped on DRUM BUS: Glue Compressor not found
+- Bus dynamics verification skipped on MUSIC BUS - Vocal Pocket: Compressor not found
+- Verified template send readback on DRUM BUS
+- Verified template send readback on DRUMS - Snare Clap
+- Verified template send readback on DRUMS - Hats Perc Top
+- Verified template send readback on MUSIC - Keys Pad
+- Verified template send readback on MUSIC - Lead Hook
+- Verified template send readback on FX - Transitions Texture
+- Verified template send readback on VOCAL - Lead Placeholder
+- Verified template send readback on VOCAL - Doubles Adlibs
+- Best next improvement: Run a small exact-match-safe device-load pass for route-enabling Drum Rack, Drift, and EQ Eight devices, then rerun routing and send readback.
+

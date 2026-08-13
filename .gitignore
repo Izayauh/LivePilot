@@ -15,6 +15,10 @@ client_secret_*.json
 # Runtime/state artifacts
 logs/
 screenshots/
+daily_beats/
+scratch/
+stems/
+*.vtt
 config/vst_cache.json
 config/tool_registry.json
 config/macros.json
