@@ -113,6 +113,12 @@ def _ratio_to_normalized(ratio: float) -> float:
     return 0.5
 
 
+def _glue_ratio_to_enum(ratio: float) -> float:
+    """Map Glue Compressor ratio choices to the local Ableton enum index."""
+    choices = [(2.0, 0.0), (4.0, 1.0), (10.0, 2.0)]
+    return min(choices, key=lambda item: abs(item[0] - ratio))[1]
+
+
 def _attack_to_normalized(attack_ms: float) -> float:
     """Convert Compressor attack time in ms to Ableton normalized (0.0-1.0).
 
@@ -133,6 +139,12 @@ def _attack_to_normalized(attack_ms: float) -> float:
     log_val = math.log10(attack_ms)
     normalized = ((log_val + 1.0) / 4.0) ** 0.707
     return max(0.0, min(1.0, normalized))
+
+
+def _glue_attack_to_enum(attack_ms: float) -> float:
+    """Map Glue Compressor attack choices to the local Ableton enum index."""
+    choices = [0.01, 0.1, 0.3, 1.0, 3.0, 10.0, 30.0]
+    return float(min(range(len(choices)), key=lambda index: abs(choices[index] - attack_ms)))
 
 
 def _release_to_normalized(release_ms: float) -> float:
@@ -161,6 +173,12 @@ def _release_to_normalized(release_ms: float) -> float:
             t = (release_ms - ms0) / (ms1 - ms0)
             return x0 + t * (x1 - x0)
     return 0.5
+
+
+def _glue_release_to_enum(release_ms: float) -> float:
+    """Map Glue Compressor release choices to the local Ableton enum index."""
+    choices = [100.0, 300.0, 600.0, 1200.0, 2400.0, 4800.0, 10000.0]
+    return float(min(range(len(choices)), key=lambda index: abs(choices[index] - release_ms)))
 
 
 def _q_to_normalized(q: float) -> float:
@@ -223,11 +241,21 @@ def smart_normalize_parameter(param_name: str, value: float, device_name: str = 
     name_lower = param_name.lower()
     device_lower = device_name.lower() if device_name else ""
 
-    # === FREQUENCY parameters (logarithmic) ===
-    if any(kw in name_lower for kw in ['frequency', 'freq', ' hz', 'filter', 'cut']):
-        # EQ bands, filter frequencies
-        if value > 1.0:  # Only convert if it looks like Hz (not already normalized)
-            return (_freq_to_normalized(value), "freq_log")
+    # === GLUE COMPRESSOR DISCRETE CONTROLS ===
+    # Glue exposes Ratio/Attack/Release as local enum-style values, not the
+    # regular Compressor's continuous normalized curves.
+    if 'glue compressor' in device_lower:
+        if 'threshold' in name_lower and value <= 0 and max_val > min_val:
+            if min_val < 0.0 and max_val <= 0.0:
+                return (max(min_val, min(value, max_val)), "glue_threshold_raw_db")
+            normalized = (value - min_val) / (max_val - min_val)
+            return (max(0.0, min(1.0, normalized)), "glue_threshold_linear")
+        if 'ratio' in name_lower and value >= 1.0:
+            return (_glue_ratio_to_enum(value), "glue_ratio_enum")
+        if 'attack' in name_lower and value > 0:
+            return (_glue_attack_to_enum(value), "glue_attack_enum")
+        if 'release' in name_lower and value > 0:
+            return (_glue_release_to_enum(value), "glue_release_enum")
 
     # === EQ FILTER TYPE ENUMS (raw integer values, not normalized) ===
     # EQ Eight filter type params are discrete enums (0..7). Sending normalized
@@ -237,6 +265,12 @@ def smart_normalize_parameter(param_name: str, value: float, device_name: str = 
         enum_val = int(round(value))
         enum_val = int(max(min_val, min(enum_val, max_val)))
         return (float(enum_val), "enum_raw")
+
+    # === FREQUENCY parameters (logarithmic) ===
+    if any(kw in name_lower for kw in ['frequency', 'freq', ' hz', 'filter', 'cut']):
+        # EQ bands, filter frequencies
+        if value > 1.0:  # Only convert if it looks like Hz (not already normalized)
+            return (_freq_to_normalized(value), "freq_log")
 
     # === COMPRESSOR THRESHOLD (piecewise lookup) ===
     if 'threshold' in name_lower and 'compressor' in device_lower:
@@ -766,11 +800,16 @@ class ReliableParameterController:
         },
         "Glue Compressor": {
             "threshold_db": ("Threshold", 1), "threshold": ("Threshold", 1),
-            "ratio": ("Ratio", 2),
-            "attack_ms": ("Attack", 3), "attack": ("Attack", 3),
-            "release_ms": ("Release", 4), "release": ("Release", 4),
-            "makeup_db": ("Makeup", 6), "makeup": ("Makeup", 6),
-            "dry_wet_pct": ("Dry/Wet", 9), "dry_wet": ("Dry/Wet", 9), "mix": ("Dry/Wet", 9),
+            # Local Ableton exposes Glue Compressor as:
+            # Device On, Threshold, Range, Makeup, Attack, Ratio, Release, Dry/Wet.
+            # Keep fallback indices aligned so capped vocal-template runs do not
+            # write Range/Makeup/Attack when OSC name lookup is incomplete.
+            "range": ("Range", 2),
+            "makeup_db": ("Makeup", 3), "makeup": ("Makeup", 3),
+            "attack_ms": ("Attack", 4), "attack": ("Attack", 4),
+            "ratio": ("Ratio", 5),
+            "release_ms": ("Release", 6), "release": ("Release", 6),
+            "dry_wet_pct": ("Dry/Wet", 7), "dry_wet": ("Dry/Wet", 7), "mix": ("Dry/Wet", 7),
         },
         "Saturator": {
             "drive_db": ("Drive", 2), "drive": ("Drive", 2),
@@ -1137,6 +1176,8 @@ class ReliableParameterController:
             "delay_log", "drive_linear", "percent", "gain_db",
             "eq_gain_raw", "eq_gain_db_fallback", "enum_raw",
             "utility_width_percent", "base_linear",
+            "glue_threshold_linear", "glue_threshold_raw_db",
+            "glue_ratio_enum", "glue_attack_enum", "glue_release_enum",
         }
         
         if probe_method in _SMART_METHODS:

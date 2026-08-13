@@ -13,8 +13,8 @@ _REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO_ROOT not in sys.path:
     sys.path.insert(0, _REPO_ROOT)
 
-from preferences.chain_preferences import load_overrides, merge_with_template, save_overrides
-from plugins.chain_resolver import resolve_plugin
+from livepilot_tools.chain_preferences import load_overrides, merge_with_template, save_overrides
+from livepilot_tools.chain_resolver import resolve_plugin
 
 
 EPSILON = 0.01
@@ -39,7 +39,7 @@ def load_owned_plugins() -> dict:
 
 
 def load_template_chain(style: str) -> list[dict]:
-    path = os.path.join(_REPO_ROOT, "knowledge", "plugin_chains.json")
+    path = os.path.join(_REPO_ROOT, "config", "vocal_chains.json")
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
 

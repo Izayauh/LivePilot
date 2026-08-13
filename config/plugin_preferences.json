@@ -3,7 +3,7 @@
   "description": "Plugin filtering and preferences for Jarvis Ableton",
 
   "blacklist": {
-    "description": "Plugins to never load (unlicensed, problematic, etc.)",
+    "description": "Plugins to never load (unlicensed, problematic, etc.). Do not blacklist installed paid plugins just because a stock fallback exists.",
     "plugins": [
       "iZotope Nectar",
       "iZotope Nectar 3",
@@ -20,7 +20,6 @@
       "iZotope Neutron",
       "iZotope Insight",
       "iZotope Tonal Balance",
-      "Waves",
       "FabFilter Pro-Q",
       "FabFilter Pro-C",
       "FabFilter Pro-L",
@@ -31,7 +30,6 @@
     ],
     "patterns": [
       "iZotope *",
-      "Waves *",
       "FabFilter *",
       "Soundtoys *",
       "UAD *"
@@ -40,12 +38,39 @@
 
   "whitelist": {
     "description": "Plugins explicitly allowed (overrides blacklist)",
-    "plugins": []
+    "plugins": [
+      "Kontakt",
+      "Kontakt 8",
+      "Kontakt 7",
+      "Komplete Kontrol"
+    ]
   },
 
   "prefer_native": {
-    "description": "When true, prefer Ableton native devices over third-party",
-    "enabled": true
+    "description": "Prefer Ableton native devices only when they are the best sonic choice, explicitly requested, or the relevant paid/third-party plugin is unavailable.",
+    "enabled": false
+  },
+
+  "plugin_selection_policy": {
+    "description": "Creative production requests should choose the best available installed plugin for the musical job, not the safest stock default.",
+    "enabled": true,
+    "rules": {
+      "default": "Research the sound goal and inspect config/vst_cache.json before loading effects. Prefer the strongest owned/installed paid or specialist plugin when it clearly fits the request.",
+      "stock_fallback": "Use Ableton stock devices only when they are genuinely the best option, when a specialist plugin is unavailable/unverified, or when Isaiah asks for stock/native devices.",
+      "bass": "For bass tone, check installed specialist bass/amp tools first: Guitar Rig 6, Waves Voltage Amps Bass, CLA Bass, JJP-Bass, RBass, MaxxBass, and Bass Rider."
+    }
+  },
+
+  "instrument_source_policy": {
+    "description": "For musical instruments, prefer Isaiah's trusted Native Instruments/Kontakt favorites over generic stock devices or random third-party plugins.",
+    "enabled": true,
+    "kontakt_favorites_snapshot": "config/kontakt_favorites.json",
+    "rules": {
+      "piano": "Use Kontakt starred/favorite pianos first. Do not substitute Drift, stock Piano, Keyscape, or Waves sampled keys unless Isaiah explicitly asks.",
+      "keys": "Use Kontakt or Komplete Kontrol favorites first for keys, Rhodes-like parts, and soft pads.",
+      "strings": "Use Kontakt favorites or installed Kontakt string libraries first for strings.",
+      "fallback": "If a Kontakt favorite cannot be loaded or verified, stop and report the blocker instead of silently choosing a random instrument."
+    }
   },
 
   "fallback_mappings": {
@@ -74,6 +99,6 @@
 
   "user_notes": {
     "description": "Add notes about your plugin situation here",
-    "notes": "Edit this file to add/remove plugins from the blacklist based on your licenses."
+    "notes": "2026-05-27: Isaiah corrected the workflow: do not default to stock Ableton plugins when a better installed paid/specialist plugin is available. Inventory and research first, then pick the best plugin for the sound."
   }
 }

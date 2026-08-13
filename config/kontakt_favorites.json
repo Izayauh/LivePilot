@@ -1,0 +1,416 @@
+{
+  "favoriteIdCount": 23,
+  "favorites": [
+    {
+      "bank": "Band",
+      "categories": [
+        "Piano / Keys > Grand Piano"
+      ],
+      "content_alias": "Kontakt Factory Library",
+      "content_path": "C:\\Users\\Public\\Documents\\Kontakt Factory Library\\",
+      "favorite_id": "1982dd074327f932fb961215fd553b6d",
+      "file_ext": "nki",
+      "file_name": "C:\\Users\\Public\\Documents\\Kontakt Factory Library\\Instruments\\Band\\2 - Acoustic Pianos\\Grand Piano.nki",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "Grand Piano",
+      "path_exists": true,
+      "product": "Kontakt",
+      "roles": [
+        "piano",
+        "keys"
+      ],
+      "sound_id": 1152,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": "Orchestral",
+      "categories": [
+        "Piano / Keys > Grand Piano"
+      ],
+      "content_alias": "Kontakt Factory Library",
+      "content_path": "C:\\Users\\Public\\Documents\\Kontakt Factory Library\\",
+      "favorite_id": "1350a8ce66edb3bbde96af662b79606c",
+      "file_ext": "nki",
+      "file_name": "C:\\Users\\Public\\Documents\\Kontakt Factory Library\\Instruments\\Orchestral\\6 - Keyboard Instruments\\August Foerster Grand.nki",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "August Foerster Grand",
+      "path_exists": true,
+      "product": "Kontakt",
+      "roles": [
+        "piano",
+        "keys"
+      ],
+      "sound_id": 1320,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": "Synth",
+      "categories": [
+        "Synth Pad"
+      ],
+      "content_alias": "Kontakt Factory Library",
+      "content_path": "C:\\Users\\Public\\Documents\\Kontakt Factory Library\\",
+      "favorite_id": "c896433b64cc4002d05628f98b2b5c28",
+      "file_ext": "nki",
+      "file_name": "C:\\Users\\Public\\Documents\\Kontakt Factory Library\\Instruments\\Synth\\1 - Pad\\April Pan.nki",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "April Pan",
+      "path_exists": true,
+      "product": "Kontakt",
+      "roles": [
+        "pads"
+      ],
+      "sound_id": 1809,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": "Synth",
+      "categories": [
+        "Synth Pad"
+      ],
+      "content_alias": "Kontakt Factory Library",
+      "content_path": "C:\\Users\\Public\\Documents\\Kontakt Factory Library\\",
+      "favorite_id": "fdd842ccfa378958eadda18247f2b1b8",
+      "file_ext": "nki",
+      "file_name": "C:\\Users\\Public\\Documents\\Kontakt Factory Library\\Instruments\\Synth\\1 - Pad\\Dawn Chorus.nki",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "Dawn Chorus",
+      "path_exists": true,
+      "product": "Kontakt",
+      "roles": [
+        "pads"
+      ],
+      "sound_id": 1819,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": "02 MTown Performance",
+      "categories": [
+        "Bowed Strings > Ensemble"
+      ],
+      "content_alias": "Session Strings",
+      "content_path": "C:\\Users\\Public\\Documents\\Session Strings\\",
+      "favorite_id": "f8bde2f5fc50519ae6294407f21be97b",
+      "file_ext": "nki",
+      "file_name": "C:\\Users\\Public\\Documents\\Session Strings\\Instruments\\02 MTown\\Performance\\01 MTown Legato FortePianoCresc.nki",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "01 MTown Legato FortePianoCresc",
+      "path_exists": true,
+      "product": "Session Strings",
+      "roles": [
+        "strings"
+      ],
+      "sound_id": 2783,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": "The Giant",
+      "categories": [
+        "Piano / Keys > Grand Piano",
+        "Piano / Keys > Other Piano / Keys",
+        "Piano / Keys > Upright Piano"
+      ],
+      "content_alias": "The Giant",
+      "content_path": "C:\\Users\\Public\\Documents\\The Giant Library",
+      "favorite_id": "1d760dc1f51e0cbf88615da8c07799f6",
+      "file_ext": "nksn",
+      "file_name": "C:\\Users\\Public\\Documents\\The Giant Library\\Snapshots\\The Giant\\Eternity.nksn",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "Eternity",
+      "path_exists": true,
+      "product": "The Giant",
+      "roles": [
+        "piano",
+        "keys",
+        "bass"
+      ],
+      "sound_id": 2821,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": null,
+      "categories": [
+        "Piano / Keys > Grand Piano"
+      ],
+      "content_alias": "The Grandeur",
+      "content_path": "C:\\Users\\Public\\Documents\\The Grandeur\\",
+      "favorite_id": "dbd1ed3983ea0f224bcddd3e3ec30a10",
+      "file_ext": "nksn",
+      "file_name": "C:\\Users\\Public\\Documents\\The Grandeur\\Snapshots\\The Grandeur\\Levitating Grand.nksn",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "Levitating Grand",
+      "path_exists": true,
+      "product": "The Grandeur",
+      "roles": [
+        "piano",
+        "keys"
+      ],
+      "sound_id": 2861,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": null,
+      "categories": [
+        "Piano / Keys > Grand Piano"
+      ],
+      "content_alias": "The Grandeur",
+      "content_path": "C:\\Users\\Public\\Documents\\The Grandeur\\",
+      "favorite_id": "1f98d8ce47163adb9c1866a066738536",
+      "file_ext": "nksn",
+      "file_name": "C:\\Users\\Public\\Documents\\The Grandeur\\Snapshots\\The Grandeur\\Ultra Soft Grand.nksn",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "Ultra Soft Grand",
+      "path_exists": true,
+      "product": "The Grandeur",
+      "roles": [
+        "piano",
+        "keys"
+      ],
+      "sound_id": 2871,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": null,
+      "categories": [
+        "Piano / Keys > Grand Piano"
+      ],
+      "content_alias": "The Maverick",
+      "content_path": "C:\\Users\\Public\\Documents\\The Maverick\\",
+      "favorite_id": "3e169d7c38d2185cbb250d1e6763924c",
+      "file_ext": "nksn",
+      "file_name": "C:\\Users\\Public\\Documents\\The Maverick\\Snapshots\\The Maverick\\Dirty Old Grand.nksn",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "Dirty Old Grand",
+      "path_exists": true,
+      "product": "The Maverick",
+      "roles": [
+        "piano",
+        "keys"
+      ],
+      "sound_id": 2878,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": null,
+      "categories": [
+        "Piano / Keys > Grand Piano"
+      ],
+      "content_alias": "The Maverick",
+      "content_path": "C:\\Users\\Public\\Documents\\The Maverick\\",
+      "favorite_id": "f96578541f02f20ee368439f688a7bda",
+      "file_ext": "nksn",
+      "file_name": "C:\\Users\\Public\\Documents\\The Maverick\\Snapshots\\The Maverick\\Jazzy Maverick.nksn",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "Jazzy Maverick",
+      "path_exists": true,
+      "product": "The Maverick",
+      "roles": [
+        "piano",
+        "keys"
+      ],
+      "sound_id": 2880,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": null,
+      "categories": [
+        "Piano / Keys > Grand Piano"
+      ],
+      "content_alias": "The Maverick",
+      "content_path": "C:\\Users\\Public\\Documents\\The Maverick\\",
+      "favorite_id": "924de488c85c967c417f06995ac013fd",
+      "file_ext": "nksn",
+      "file_name": "C:\\Users\\Public\\Documents\\The Maverick\\Snapshots\\The Maverick\\Natural  Maverick.nksn",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "Natural Maverick",
+      "path_exists": true,
+      "product": "The Maverick",
+      "roles": [
+        "piano",
+        "keys"
+      ],
+      "sound_id": 2883,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": null,
+      "categories": [
+        "Piano / Keys > Grand Piano"
+      ],
+      "content_alias": "The Maverick",
+      "content_path": "C:\\Users\\Public\\Documents\\The Maverick\\",
+      "favorite_id": "10c0da56970a6719728675140b388acb",
+      "file_ext": "nki",
+      "file_name": "C:\\Users\\Public\\Documents\\The Maverick\\Instruments\\The Maverick.nki",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "The Maverick",
+      "path_exists": true,
+      "product": "The Maverick",
+      "roles": [
+        "piano",
+        "keys"
+      ],
+      "sound_id": 2873,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": null,
+      "categories": [
+        "Piano / Keys > Grand Piano"
+      ],
+      "content_alias": "The Maverick",
+      "content_path": "C:\\Users\\Public\\Documents\\The Maverick\\",
+      "favorite_id": "d1b21d994ef057455dde33a9569deafb",
+      "file_ext": "nksn",
+      "file_name": "C:\\Users\\Public\\Documents\\The Maverick\\Snapshots\\The Maverick\\Tranquil Maverick.nksn",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "Tranquil Maverick",
+      "path_exists": true,
+      "product": "The Maverick",
+      "roles": [
+        "piano",
+        "keys"
+      ],
+      "sound_id": 2890,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    },
+    {
+      "bank": "Cotton",
+      "categories": [
+        "Piano / Keys > Upright Piano"
+      ],
+      "content_alias": "Una Corda",
+      "content_path": "C:\\Users\\Public\\Documents\\Una Corda\\",
+      "favorite_id": "12d267172a4251b073af3fd7121ed19b",
+      "file_ext": "nksn",
+      "file_name": "C:\\Users\\Public\\Documents\\Una Corda\\Snapshots\\Una Corda Cotton\\Cotton - Full.nksn",
+      "load_candidate": true,
+      "modes": [
+        "Sample-based"
+      ],
+      "name": "Cotton - Full",
+      "path_exists": true,
+      "product": "Una Corda",
+      "roles": [
+        "piano",
+        "keys",
+        "bass"
+      ],
+      "sound_id": 2901,
+      "source": "kontakt8",
+      "subbank": null,
+      "vendor": "Native Instruments"
+    }
+  ],
+  "generatedAt": "2026-05-27T05:42:00.051705",
+  "roleGroups": {
+    "bass": [
+      "The Giant: Eternity",
+      "Una Corda: Cotton - Full"
+    ],
+    "keys": [
+      "Kontakt: August Foerster Grand",
+      "Kontakt: Grand Piano",
+      "The Giant: Eternity",
+      "The Grandeur: Levitating Grand",
+      "The Grandeur: Ultra Soft Grand",
+      "The Maverick: Dirty Old Grand",
+      "The Maverick: Jazzy Maverick",
+      "The Maverick: Natural Maverick",
+      "The Maverick: The Maverick",
+      "The Maverick: Tranquil Maverick",
+      "Una Corda: Cotton - Full"
+    ],
+    "pads": [
+      "Kontakt: April Pan",
+      "Kontakt: Dawn Chorus"
+    ],
+    "piano": [
+      "Kontakt: August Foerster Grand",
+      "Kontakt: Grand Piano",
+      "The Giant: Eternity",
+      "The Grandeur: Levitating Grand",
+      "The Grandeur: Ultra Soft Grand",
+      "The Maverick: Dirty Old Grand",
+      "The Maverick: Jazzy Maverick",
+      "The Maverick: Natural Maverick",
+      "The Maverick: The Maverick",
+      "The Maverick: Tranquil Maverick",
+      "Una Corda: Cotton - Full"
+    ],
+    "strings": [
+      "Session Strings: 01 MTown Legato FortePianoCresc"
+    ]
+  },
+  "sourceDatabases": {
+    "favorites": "C:\\Users\\isaia\\AppData\\Local\\Native Instruments\\Shared\\favorites.db3",
+    "kompleteKontrol": null,
+    "kontakt8": "C:\\Users\\isaia\\AppData\\Local\\Native Instruments\\Kontakt 8\\komplete.db3"
+  },
+  "success": true
+}

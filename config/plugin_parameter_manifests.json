@@ -1,0 +1,433 @@
+{
+  "schema_version": "livepilot-plugin-parameter-manifests-v1",
+  "plugins": {
+    "req_6_stereo": {
+      "canonical_name": "REQ 6 Stereo",
+      "plugin_family": "Waves Renaissance EQ",
+      "aliases": [
+        "REQ 6",
+        "REQ6",
+        "Renaissance EQ 6",
+        "Renaissance Equalizer 6",
+        "Waves REQ 6 Stereo",
+        "Renaissance Equalizer Stereo"
+      ],
+      "preferred_control": "ableton_lom",
+      "fallbacks": [
+        "rack_macro",
+        "waves_midi_learn",
+        "waves_studiorack_macro",
+        "vision"
+      ],
+      "notes": "Night-owl piano cleanup EQ: remove rumble and box without making the instrument feel small.",
+      "parameters": {
+        "hp_freq": {
+          "display_name": "Band 1 Frequency",
+          "aliases": [
+            "high pass frequency",
+            "hp frequency",
+            "low cut frequency",
+            "rumble cutoff"
+          ],
+          "target_unit": "Hz",
+          "safe_range": {
+            "min": 45.0,
+            "max": 160.0,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "Band 1 Frequency",
+            "1 Frequency",
+            "1 Freq",
+            "Band 1 Freq",
+            "Low Cut Frequency",
+            "HP Frequency"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 3.0
+          },
+          "musical_role": "Keeps left-hand piano weight from fighting the kick and bass."
+        },
+        "low_mid_gain": {
+          "display_name": "Band 3 Gain",
+          "aliases": [
+            "mud gain",
+            "low mid gain",
+            "box cut",
+            "body cut"
+          ],
+          "target_unit": "dB",
+          "safe_range": {
+            "min": -5.0,
+            "max": 1.5,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "Band 3 Gain",
+            "3 Gain",
+            "3 Gain A",
+            "Low Mid Gain",
+            "LMF Gain"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 0.35
+          },
+          "musical_role": "Carves the cloudy 300-600 Hz range while preserving the chord foundation."
+        },
+        "low_mid_freq": {
+          "display_name": "Band 3 Frequency",
+          "aliases": [
+            "mud frequency",
+            "low mid frequency",
+            "box frequency"
+          ],
+          "target_unit": "Hz",
+          "safe_range": {
+            "min": 250.0,
+            "max": 650.0,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "Band 3 Frequency",
+            "3 Frequency",
+            "3 Freq",
+            "Low Mid Frequency",
+            "LMF Frequency"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 15.0
+          },
+          "musical_role": "Finds the piano boxiness zone for a small, musical subtractive cut."
+        },
+        "presence_gain": {
+          "display_name": "Band 5 Gain",
+          "aliases": [
+            "presence gain",
+            "bite gain",
+            "hardness cut",
+            "upper mid gain"
+          ],
+          "target_unit": "dB",
+          "safe_range": {
+            "min": -4.0,
+            "max": 2.0,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "Band 5 Gain",
+            "5 Gain",
+            "5 Gain A",
+            "Presence Gain",
+            "High Mid Gain"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 0.35
+          },
+          "musical_role": "Controls pokey hammer tone before the exciter and reverb."
+        },
+        "presence_freq": {
+          "display_name": "Band 5 Frequency",
+          "aliases": [
+            "presence frequency",
+            "bite frequency",
+            "upper mid frequency"
+          ],
+          "target_unit": "Hz",
+          "safe_range": {
+            "min": 1800.0,
+            "max": 4500.0,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "Band 5 Frequency",
+            "5 Frequency",
+            "5 Freq",
+            "Presence Frequency",
+            "High Mid Frequency"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 80.0
+          },
+          "musical_role": "Aims the small upper-mid control move without flattening the piano dynamics."
+        },
+        "output_trim": {
+          "display_name": "Output",
+          "aliases": [
+            "output",
+            "trim",
+            "eq output",
+            "makeup"
+          ],
+          "target_unit": "dB",
+          "safe_range": {
+            "min": -8.0,
+            "max": 3.0,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "Output",
+            "Out",
+            "Trim",
+            "Output Gain"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 0.35
+          },
+          "musical_role": "Level matches the EQ so louder does not get mistaken for better."
+        }
+      }
+    },
+    "ssl_ev2_channel_stereo": {
+      "canonical_name": "SSL EV2 Channel Stereo",
+      "plugin_family": "Waves SSL EV2 Channel",
+      "aliases": [
+        "SSL EV2 Channel",
+        "SSL EV2",
+        "Waves SSL EV2 Channel Stereo",
+        "SSL EV2 Stereo",
+        "Solid State Logic EV2"
+      ],
+      "preferred_control": "ableton_lom",
+      "fallbacks": [
+        "rack_macro",
+        "waves_midi_learn",
+        "waves_studiorack_macro",
+        "vision"
+      ],
+      "notes": "Console color and gentle cleanup after REQ. For piano foundations, use this for tone and control, not obvious compression.",
+      "parameters": {
+        "hp_freq": {
+          "display_name": "High Pass Frequency",
+          "aliases": [
+            "high pass",
+            "hp frequency",
+            "low cut",
+            "filter high pass"
+          ],
+          "target_unit": "Hz",
+          "safe_range": {
+            "min": 45.0,
+            "max": 120.0,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "High Pass Frequency",
+            "HP Frequency",
+            "High Pass",
+            "HP Freq",
+            "Filters High Pass"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 3.0
+          },
+          "musical_role": "Lets the piano sit under the beat without low-end blur."
+        },
+        "lp_freq": {
+          "display_name": "Low Pass Frequency",
+          "aliases": [
+            "low pass",
+            "lp frequency",
+            "top rolloff",
+            "filter low pass"
+          ],
+          "target_unit": "kHz",
+          "safe_range": {
+            "min": 6.0,
+            "max": 14.0,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "Low Pass Frequency",
+            "LP Frequency",
+            "Low Pass",
+            "LP Freq",
+            "Filters Low Pass"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 0.35
+          },
+          "musical_role": "Darkens the piano before delay and reverb without making it dull."
+        },
+        "lmf_gain": {
+          "display_name": "LMF Gain",
+          "aliases": [
+            "low mid gain",
+            "lmf",
+            "lmf cut",
+            "mud cut"
+          ],
+          "target_unit": "dB",
+          "safe_range": {
+            "min": -5.0,
+            "max": 1.5,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "LMF Gain",
+            "Low Mid Gain",
+            "LMF",
+            "L Mid Gain"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 0.35
+          },
+          "musical_role": "A small cloudy-mid dip so gentle chords still feel wide and expensive."
+        },
+        "lmf_freq": {
+          "display_name": "LMF Frequency",
+          "aliases": [
+            "low mid frequency",
+            "lmf frequency",
+            "mud frequency"
+          ],
+          "target_unit": "kHz",
+          "safe_range": {
+            "min": 0.25,
+            "max": 0.65,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "LMF Frequency",
+            "LMF Freq",
+            "Low Mid Frequency",
+            "L Mid Freq"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 0.03
+          },
+          "musical_role": "Targets the boxy note-bloom area around 350-450 Hz."
+        },
+        "hmf_gain": {
+          "display_name": "HMF Gain",
+          "aliases": [
+            "high mid gain",
+            "hmf",
+            "hmf cut",
+            "presence cut"
+          ],
+          "target_unit": "dB",
+          "safe_range": {
+            "min": -4.0,
+            "max": 2.0,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "HMF Gain",
+            "High Mid Gain",
+            "HMF",
+            "H Mid Gain"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 0.35
+          },
+          "musical_role": "Tames hard hammer bite before the louder dynamic processors."
+        },
+        "hmf_freq": {
+          "display_name": "HMF Frequency",
+          "aliases": [
+            "high mid frequency",
+            "hmf frequency",
+            "presence frequency"
+          ],
+          "target_unit": "kHz",
+          "safe_range": {
+            "min": 2.0,
+            "max": 4.5,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "HMF Frequency",
+            "HMF Freq",
+            "High Mid Frequency",
+            "H Mid Freq"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 0.08
+          },
+          "musical_role": "Aims the bite control move without hiding the note attack."
+        },
+        "comp_ratio": {
+          "display_name": "Compressor Ratio",
+          "aliases": [
+            "ratio",
+            "compressor ratio",
+            "ssl ratio"
+          ],
+          "target_unit": ":1",
+          "safe_range": {
+            "min": 1.0,
+            "max": 3.0,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "Compressor Ratio",
+            "Comp Ratio",
+            "Ratio"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 0.2
+          },
+          "musical_role": "Keeps SSL compression gentle so piano velocity still speaks."
+        },
+        "comp_threshold": {
+          "display_name": "Compressor Threshold",
+          "aliases": [
+            "threshold",
+            "compressor threshold",
+            "ssl threshold"
+          ],
+          "target_unit": "dB",
+          "safe_range": {
+            "min": -18.0,
+            "max": 6.0,
+            "on_violation": "clamp"
+          },
+          "lom_name_candidates": [
+            "Compressor Threshold",
+            "Comp Threshold",
+            "Threshold"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 0.5
+          },
+          "musical_role": "Only kisses the piano when it jumps out; MV2/CLA-2A can do the heavier level work later."
+        },
+        "analog": {
+          "display_name": "Analog",
+          "aliases": [
+            "analog noise",
+            "analog mode"
+          ],
+          "target_unit": "switch",
+          "value_map": {
+            "off": 0.0,
+            "on": 1.0
+          },
+          "lom_name_candidates": [
+            "Analog",
+            "ANALOG"
+          ],
+          "verify": {
+            "method": "lom_readback",
+            "tolerance": 0.01
+          },
+          "musical_role": "Avoids adding hiss to a quiet, detailed piano foundation."
+        }
+      }
+    }
+  }
+}

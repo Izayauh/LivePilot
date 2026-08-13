@@ -18,11 +18,13 @@ Usage:
 
 from __future__ import with_statement
 import Live
+import json
 import os
 import threading
 import socket
 import struct
 import time
+import tempfile
 
 # Import Ableton Framework components
 try:
@@ -144,6 +146,10 @@ class JarvisDeviceLoader(ControlSurface):
                 self._handle_get_track_type(args, addr)
             elif address == "/jarvis/device/select":
                 self._handle_select_device(args, addr)
+            elif address == "/jarvis/device/tree":
+                self._handle_device_tree(args, addr)
+            elif address == "/jarvis/device/params_by_path":
+                self._handle_device_params_by_path(args, addr)
             elif address == "/jarvis/debug/browser":
                 self._handle_debug_browser(args, addr)
             elif address == "/jarvis/clip/create_audio":
@@ -241,6 +247,337 @@ class JarvisDeviceLoader(ControlSurface):
             sock.close()
         except Exception as e:
             self.log_message("Error sending response: {}".format(str(e)))
+
+    def _send_json_response(self, addr, response_address, payload):
+        """Send a JSON payload, falling back to a temp file if UDP is too small."""
+        try:
+            json_text = json.dumps(payload, separators=(',', ':'), sort_keys=True)
+            if len(json_text.encode('utf-8')) > 55000:
+                filename = "livepilot_{}_{}.json".format(
+                    response_address.strip('/').replace('/', '_'),
+                    int(time.time() * 1000)
+                )
+                path = os.path.join(tempfile.gettempdir(), filename)
+                with open(path, 'w') as f:
+                    f.write(json_text)
+                json_text = json.dumps({
+                    "schema_version": payload.get("schema_version"),
+                    "payload_format": "json_file",
+                    "path": path,
+                    "bytes": os.path.getsize(path)
+                }, separators=(',', ':'), sort_keys=True)
+            self._send_response(addr, response_address, [1, "success", json_text])
+        except Exception as e:
+            self.log_message("JSON response error: {}".format(str(e)))
+            self._send_response(addr, response_address, [0, "error", str(e)])
+
+    # ==================== RECURSIVE DEVICE INSPECTION ====================
+
+    def _handle_device_tree(self, args, addr):
+        """Return a recursive JSON device tree for a track."""
+        if len(args) < 1:
+            self._send_response(addr, "/jarvis/device/tree/response",
+                              [0, "error", "Missing argument: track_index"])
+            return
+
+        track_index = int(args[0])
+
+        def do_tree_on_main_thread():
+            try:
+                payload = self._get_device_tree(track_index)
+                self._send_json_response(addr, "/jarvis/device/tree/response", payload)
+            except Exception as e:
+                self.log_message("Device tree error: {}".format(str(e)))
+                self._send_response(addr, "/jarvis/device/tree/response",
+                                  [0, "error", str(e)])
+
+        if hasattr(self, 'schedule_message'):
+            self.schedule_message(1, do_tree_on_main_thread)
+        else:
+            do_tree_on_main_thread()
+
+    def _handle_device_params_by_path(self, args, addr):
+        """Return parameter details for a nested device path."""
+        if len(args) < 2:
+            self._send_response(addr, "/jarvis/device/params_by_path/response",
+                              [0, "error", "Missing arguments: track_index, device_path_json"])
+            return
+
+        track_index = int(args[0])
+        device_path_json = str(args[1])
+
+        def do_params_on_main_thread():
+            try:
+                device_path = json.loads(device_path_json)
+                payload = self._get_device_params_by_path(track_index, device_path)
+                self._send_json_response(addr, "/jarvis/device/params_by_path/response", payload)
+            except Exception as e:
+                self.log_message("Device params by path error: {}".format(str(e)))
+                self._send_response(addr, "/jarvis/device/params_by_path/response",
+                                  [0, "error", str(e)])
+
+        if hasattr(self, 'schedule_message'):
+            self.schedule_message(1, do_params_on_main_thread)
+        else:
+            do_params_on_main_thread()
+
+    def _get_device_tree(self, track_index, max_depth=5):
+        song = self._get_song()
+        if not song:
+            return {
+                "schema_version": "livepilot.device_tree.v1",
+                "success": False,
+                "track_index": track_index,
+                "error": "Cannot access song",
+                "devices": []
+            }
+
+        tracks = list(song.tracks)
+        if track_index < 0 or track_index >= len(tracks):
+            return {
+                "schema_version": "livepilot.device_tree.v1",
+                "success": False,
+                "track_index": track_index,
+                "error": "Invalid track index",
+                "available_tracks": len(tracks),
+                "devices": []
+            }
+
+        track = tracks[track_index]
+        payload = {
+            "schema_version": "livepilot.device_tree.v1",
+            "success": True,
+            "track_index": track_index,
+            "track_name": self._safe_attr(track, "name", ""),
+            "devices": [],
+            "warnings": [],
+            "errors": []
+        }
+
+        try:
+            devices = list(track.devices)
+        except Exception as e:
+            payload["success"] = False
+            payload["errors"].append("Could not read track devices: {}".format(str(e)))
+            return payload
+
+        for index, device in enumerate(devices):
+            name = self._safe_attr(device, "name", "")
+            path = [{"kind": "track_device", "index": index, "name": name}]
+            payload["devices"].append(self._capture_device_node(device, path, 0, max_depth))
+
+        return payload
+
+    def _get_device_params_by_path(self, track_index, device_path):
+        payload = {
+            "schema_version": "livepilot.device_params_by_path.v1",
+            "success": False,
+            "track_index": track_index,
+            "device_path": device_path,
+            "parameters": [],
+            "errors": []
+        }
+        device, error = self._resolve_device_path(track_index, device_path)
+        if error:
+            payload["errors"].append(error)
+            return payload
+
+        payload["success"] = True
+        payload["device_name"] = self._safe_attr(device, "name", "")
+        payload["class_name"] = self._safe_attr(device, "class_name", "")
+        payload["parameters"] = self._capture_parameters(device)
+        return payload
+
+    def _resolve_device_path(self, track_index, device_path):
+        song = self._get_song()
+        if not song:
+            return None, "Cannot access song"
+
+        tracks = list(song.tracks)
+        if track_index < 0 or track_index >= len(tracks):
+            return None, "Invalid track index"
+        if not device_path:
+            return None, "Device path is empty"
+
+        current_device = None
+        current_chain = None
+        for element in device_path:
+            kind = element.get("kind")
+            index = int(element.get("index", -1))
+
+            if kind == "track_device":
+                devices = list(tracks[track_index].devices)
+                if index < 0 or index >= len(devices):
+                    return None, "Invalid track device index: {}".format(index)
+                current_device = devices[index]
+                current_chain = None
+            elif kind in ("chain", "return_chain"):
+                if current_device is None:
+                    return None, "{} appears before a device".format(kind)
+                attr = "return_chains" if kind == "return_chain" else "chains"
+                chains = list(self._safe_attr(current_device, attr, []))
+                if index < 0 or index >= len(chains):
+                    return None, "Invalid {} index: {}".format(kind, index)
+                current_chain = chains[index]
+            elif kind == "chain_device":
+                if current_chain is None:
+                    return None, "chain_device appears before a chain"
+                devices = list(self._safe_attr(current_chain, "devices", []))
+                if index < 0 or index >= len(devices):
+                    return None, "Invalid chain device index: {}".format(index)
+                current_device = devices[index]
+            else:
+                return None, "Unsupported path element kind: {}".format(kind)
+
+        if current_device is None:
+            return None, "Path did not resolve to a device"
+        return current_device, None
+
+    def _capture_device_node(self, device, path, depth, max_depth):
+        node = {
+            "kind": "device",
+            "path": path,
+            "name": self._safe_attr(device, "name", ""),
+            "class_name": self._safe_attr(device, "class_name", ""),
+            "class_display_name": self._safe_attr(device, "class_display_name", ""),
+            "type": self._json_safe(self._safe_attr(device, "type", None)),
+            "is_enabled": self._json_safe(self._safe_attr(device, "is_enabled", None)),
+            "is_active": self._json_safe(self._safe_attr(device, "is_active", None)),
+            "can_have_chains": bool(self._safe_attr(device, "can_have_chains", False)),
+            "can_show_chains": bool(self._safe_attr(device, "can_show_chains", False)),
+            "parameters": [],
+            "chains": [],
+            "return_chains": [],
+            "errors": []
+        }
+
+        try:
+            node["parameters"] = self._capture_parameters(device)
+        except Exception as e:
+            node["errors"].append("Could not read parameters: {}".format(str(e)))
+
+        if depth >= max_depth:
+            if node["can_have_chains"]:
+                node["errors"].append("Max recursion depth reached")
+            return node
+
+        if node["can_have_chains"]:
+            node["chains"] = self._capture_chain_collection(
+                device, "chains", "chain", path, depth, max_depth)
+            node["return_chains"] = self._capture_chain_collection(
+                device, "return_chains", "return_chain", path, depth, max_depth)
+
+        return node
+
+    def _capture_chain_collection(self, device, attr_name, path_kind, parent_path, depth, max_depth):
+        chains_payload = []
+        try:
+            chains = list(self._safe_attr(device, attr_name, []))
+        except Exception as e:
+            return [{
+                "kind": path_kind,
+                "index": -1,
+                "name": "",
+                "path": parent_path,
+                "devices": [],
+                "errors": ["Could not read {}: {}".format(attr_name, str(e))]
+            }]
+
+        for chain_index, chain in enumerate(chains):
+            chain_name = self._safe_attr(chain, "name", "")
+            chain_path = parent_path + [{"kind": path_kind, "index": chain_index, "name": chain_name}]
+            chain_payload = {
+                "kind": path_kind,
+                "index": chain_index,
+                "name": chain_name,
+                "path": chain_path,
+                "mixer": self._capture_chain_mixer(chain),
+                "devices": [],
+                "errors": []
+            }
+            try:
+                devices = list(self._safe_attr(chain, "devices", []))
+                for device_index, child in enumerate(devices):
+                    child_name = self._safe_attr(child, "name", "")
+                    child_path = chain_path + [{
+                        "kind": "chain_device",
+                        "index": device_index,
+                        "name": child_name
+                    }]
+                    chain_payload["devices"].append(
+                        self._capture_device_node(child, child_path, depth + 1, max_depth)
+                    )
+            except Exception as e:
+                chain_payload["errors"].append("Could not read chain devices: {}".format(str(e)))
+            chains_payload.append(chain_payload)
+
+        return chains_payload
+
+    def _capture_chain_mixer(self, chain):
+        mixer = self._safe_attr(chain, "mixer_device", None)
+        if mixer is None:
+            return {}
+
+        data = {}
+        for attr in ("volume", "panning", "chain_activator"):
+            param = self._safe_attr(mixer, attr, None)
+            if param is not None:
+                data[attr] = self._capture_parameter(param, -1)
+
+        try:
+            sends = list(self._safe_attr(mixer, "sends", []))
+            data["sends"] = [self._capture_parameter(param, index)
+                             for index, param in enumerate(sends)]
+        except Exception:
+            data["sends"] = []
+
+        return data
+
+    def _capture_parameters(self, device):
+        try:
+            params = list(self._safe_attr(device, "parameters", []))
+        except Exception:
+            return []
+        return [self._capture_parameter(param, index) for index, param in enumerate(params)]
+
+    def _capture_parameter(self, param, index):
+        data = {
+            "index": index,
+            "name": self._safe_attr(param, "name", ""),
+            "value": self._json_safe(self._safe_attr(param, "value", None)),
+            "min": self._json_safe(self._safe_attr(param, "min", None)),
+            "max": self._json_safe(self._safe_attr(param, "max", None)),
+            "default_value": self._json_safe(self._safe_attr(param, "default_value", None)),
+            "is_enabled": self._json_safe(self._safe_attr(param, "is_enabled", None))
+        }
+
+        display = None
+        value = self._safe_attr(param, "value", None)
+        try:
+            if hasattr(param, "str_for_value") and value is not None:
+                display = param.str_for_value(value)
+        except Exception as e:
+            data["display_error"] = str(e)
+        if display is not None:
+            data["display_value"] = self._json_safe(display)
+
+        return data
+
+    def _safe_attr(self, obj, name, default=None):
+        try:
+            if hasattr(obj, name):
+                return getattr(obj, name)
+        except Exception:
+            return default
+        return default
+
+    def _json_safe(self, value):
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return value
+        try:
+            return str(value)
+        except Exception:
+            return "<unserializable>"
     
     # ==================== DEVICE LOADING ====================
     

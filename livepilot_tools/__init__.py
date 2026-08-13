@@ -1,21 +1,15 @@
-"""Shared deterministic LivePilot tools."""
+"""Shared deterministic LivePilot tools.
 
-from .context_tools import (
-    analyze_clip_context,
-    analyze_rhythm_context,
-    get_creative_context,
-    get_project_intent,
-    plan_arrangement_move,
-    set_project_intent,
-    validate_arrangement_plan,
-)
+Import submodules directly (e.g. ``from livepilot_tools.plugin_recipes import …``)
+to avoid pulling optional session dependencies through package ``__init__``.
+"""
 
 __all__ = [
-    "analyze_clip_context",
-    "analyze_rhythm_context",
-    "get_creative_context",
-    "get_project_intent",
-    "plan_arrangement_move",
-    "set_project_intent",
-    "validate_arrangement_plan",
+    "context_tools",
+    "chain_preferences",
+    "chain_resolver",
+    "kontakt_library",
+    "parameter_contracts",
+    "plugin_recipes",
+    "stem_tools",
 ]

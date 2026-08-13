@@ -53,6 +53,21 @@
       "Vocal Rider Stereo",
       "Vocal Rider Mono",
       "Vocal Rider",
+      "CLA Bass Stereo",
+      "CLA Bass Mono/Stereo",
+      "CLA Bass",
+      "JJP-Bass Stereo",
+      "JJP-Bass Mono/Stereo",
+      "JJP-Bass",
+      "RBass Stereo",
+      "RBass Mono",
+      "RBass",
+      "MaxxBass Stereo",
+      "MaxxBass Mono",
+      "MaxxBass",
+      "Voltage Amps Bass Stereo",
+      "Voltage Amps Bass Mono/Stereo",
+      "Voltage Amps Bass",
       "Bass Rider Stereo",
       "Bass Rider Mono",
       "Bass Rider",
@@ -109,6 +124,9 @@
       "Saturator",
       "Utility",
       "Gate"
+    ],
+    "Native Instruments": [
+      "Guitar Rig 6"
     ]
   }
 }

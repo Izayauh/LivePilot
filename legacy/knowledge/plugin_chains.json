@@ -1,0 +1,1087 @@
+{
+  "version": "1.0",
+  "description": "Cached plugin chain research results for Jarvis",
+  "last_updated": "2026-02-14T03:17:57.416197",
+  "chains": {
+    "billie_eilish_vocal": {
+      "artist_or_style": "Billie Eilish",
+      "track_type": "vocal",
+      "researched_date": "2025-12-21",
+      "sources": [
+        "builtin_knowledge",
+        "industry_standard"
+      ],
+      "description": "Intimate, breathy vocal processing with dark reverb",
+      "chain": [
+        {
+          "type": "eq",
+          "purpose": "high_pass",
+          "plugin_suggestions": [
+            "EQ Eight",
+            "FabFilter Pro-Q 3"
+          ],
+          "settings": {
+            "high_pass_freq": "80-100Hz",
+            "slope": "24dB/oct"
+          }
+        },
+        {
+          "type": "compressor",
+          "purpose": "gentle_control",
+          "plugin_suggestions": [
+            "Compressor",
+            "FabFilter Pro-C 2",
+            "CLA-2A"
+          ],
+          "settings": {
+            "ratio": "2:1",
+            "attack": "medium",
+            "threshold": "gentle"
+          }
+        },
+        {
+          "type": "de-esser",
+          "purpose": "sibilance_control",
+          "plugin_suggestions": [
+            "Multiband Dynamics",
+            "FabFilter Pro-DS",
+            "Waves DeEsser"
+          ],
+          "settings": {
+            "frequency": "6-8kHz",
+            "reduction": "moderate"
+          }
+        },
+        {
+          "type": "eq",
+          "purpose": "presence",
+          "plugin_suggestions": [
+            "EQ Eight",
+            "FabFilter Pro-Q 3"
+          ],
+          "settings": {
+            "boost": "2-3kHz subtle"
+          }
+        },
+        {
+          "type": "saturation",
+          "purpose": "warmth",
+          "plugin_suggestions": [
+            "Saturator",
+            "Decapitator",
+            "FabFilter Saturn"
+          ],
+          "settings": {
+            "drive": "subtle",
+            "color": "warm"
+          }
+        },
+        {
+          "type": "reverb",
+          "purpose": "atmosphere",
+          "plugin_suggestions": [
+            "Reverb",
+            "Valhalla Room",
+            "FabFilter Pro-R"
+          ],
+          "settings": {
+            "dark": true,
+            "decay": "long",
+            "predelay": "30-50ms"
+          }
+        },
+        {
+          "type": "delay",
+          "purpose": "depth",
+          "plugin_suggestions": [
+            "Delay",
+            "Echo",
+            "EchoBoy"
+          ],
+          "settings": {
+            "subtle": true,
+            "filtered": true
+          }
+        }
+      ],
+      "notes": "Keep it intimate and close. Heavy use of whisper processing. Finneas uses a lot of room sound.",
+      "confidence": 0.9,
+      "load_history": [
+        {
+          "timestamp": "2025-12-21T00:09:18.611517",
+          "track_index": 2,
+          "plugins_loaded": [
+            "EQ Eight",
+            "Compressor",
+            "Multiband Dynamics",
+            "EQ Eight",
+            "Saturator",
+            "Reverb"
+          ]
+        },
+        {
+          "timestamp": "2025-12-21T22:45:46.303792",
+          "track_index": 1,
+          "plugins_loaded": [
+            "EQ Eight",
+            "Compressor",
+            "Multiband Dynamics",
+            "EQ Eight",
+            "Saturator",
+            "Reverb"
+          ]
+        }
+      ]
+    },
+    "the_weeknd_vocal": {
+      "artist_or_style": "The Weeknd",
+      "track_type": "vocal",
+      "researched_date": "2025-12-21",
+      "sources": [
+        "builtin_knowledge"
+      ],
+      "description": "Smooth R&B vocal with modern production",
+      "chain": [
+        {
+          "type": "eq",
+          "purpose": "high_pass",
+          "plugin_suggestions": [
+            "EQ Eight"
+          ],
+          "settings": {
+            "freq": "100Hz"
+          }
+        },
+        {
+          "type": "compressor",
+          "purpose": "control",
+          "plugin_suggestions": [
+            "Compressor",
+            "SSL E-Channel"
+          ],
+          "settings": {
+            "ratio": "4:1"
+          }
+        },
+        {
+          "type": "de-esser",
+          "purpose": "sibilance_control",
+          "plugin_suggestions": [
+            "Multiband Dynamics"
+          ]
+        },
+        {
+          "type": "eq",
+          "purpose": "air",
+          "plugin_suggestions": [
+            "EQ Eight"
+          ],
+          "settings": {
+            "boost": "10-12kHz"
+          }
+        },
+        {
+          "type": "reverb",
+          "purpose": "space",
+          "plugin_suggestions": [
+            "Reverb"
+          ],
+          "settings": {
+            "type": "plate"
+          }
+        },
+        {
+          "type": "delay",
+          "purpose": "width",
+          "plugin_suggestions": [
+            "Delay"
+          ],
+          "settings": {
+            "stereo": true
+          }
+        }
+      ],
+      "confidence": 0.85
+    },
+    "modern_pop_vocal": {
+      "artist_or_style": "modern pop",
+      "track_type": "vocal",
+      "researched_date": "2025-12-21",
+      "sources": [
+        "builtin_knowledge"
+      ],
+      "description": "Polished, upfront pop vocal",
+      "chain": [
+        {
+          "type": "eq",
+          "purpose": "high_pass",
+          "plugin_suggestions": [
+            "EQ Eight"
+          ],
+          "settings": {
+            "freq": "80Hz"
+          }
+        },
+        {
+          "type": "compressor",
+          "purpose": "leveling",
+          "plugin_suggestions": [
+            "Compressor",
+            "Glue Compressor"
+          ],
+          "settings": {
+            "ratio": "4:1",
+            "attack": "fast"
+          }
+        },
+        {
+          "type": "de-esser",
+          "purpose": "sibilance_control",
+          "plugin_suggestions": [
+            "Multiband Dynamics"
+          ]
+        },
+        {
+          "type": "eq",
+          "purpose": "presence_and_air",
+          "plugin_suggestions": [
+            "EQ Eight"
+          ],
+          "settings": {
+            "boost": "3-5kHz, 10kHz"
+          }
+        },
+        {
+          "type": "limiter",
+          "purpose": "peaks",
+          "plugin_suggestions": [
+            "Limiter"
+          ]
+        },
+        {
+          "type": "reverb",
+          "purpose": "polish",
+          "plugin_suggestions": [
+            "Reverb"
+          ],
+          "settings": {
+            "decay": "short"
+          }
+        }
+      ],
+      "confidence": 0.85
+    },
+    "hip_hop_vocal": {
+      "artist_or_style": "hip hop",
+      "track_type": "vocal",
+      "researched_date": "2025-12-21",
+      "sources": [
+        "builtin_knowledge"
+      ],
+      "description": "Punchy, upfront hip hop vocal",
+      "chain": [
+        {
+          "type": "eq",
+          "purpose": "high_pass",
+          "plugin_suggestions": [
+            "EQ Eight"
+          ],
+          "settings": {
+            "freq": "100Hz"
+          }
+        },
+        {
+          "type": "compressor",
+          "purpose": "punch",
+          "plugin_suggestions": [
+            "Compressor",
+            "CLA-76"
+          ],
+          "settings": {
+            "ratio": "6:1",
+            "attack": "fast"
+          }
+        },
+        {
+          "type": "de-esser",
+          "purpose": "sibilance_control",
+          "plugin_suggestions": [
+            "Multiband Dynamics"
+          ]
+        },
+        {
+          "type": "saturation",
+          "purpose": "grit",
+          "plugin_suggestions": [
+            "Saturator",
+            "Decapitator"
+          ],
+          "settings": {
+            "drive": "moderate"
+          }
+        },
+        {
+          "type": "eq",
+          "purpose": "presence",
+          "plugin_suggestions": [
+            "EQ Eight"
+          ],
+          "settings": {
+            "boost": "2-4kHz"
+          }
+        },
+        {
+          "type": "delay",
+          "purpose": "space",
+          "plugin_suggestions": [
+            "Delay"
+          ],
+          "settings": {
+            "time": "1/4 note"
+          }
+        }
+      ],
+      "confidence": 0.85,
+      "load_history": [
+        {
+          "timestamp": "2026-02-04T15:22:29.709178",
+          "track_index": 2,
+          "plugins_loaded": [
+            "EQ Eight",
+            "Compressor",
+            "Multiband Dynamics",
+            "Saturator",
+            "EQ Eight",
+            "Delay"
+          ]
+        }
+      ]
+    },
+    "drum_bus_standard": {
+      "artist_or_style": "standard",
+      "track_type": "drums",
+      "researched_date": "2025-12-21",
+      "sources": [
+        "builtin_knowledge"
+      ],
+      "description": "Standard drum bus processing for punch and glue",
+      "chain": [
+        {
+          "type": "eq",
+          "purpose": "shape",
+          "plugin_suggestions": [
+            "EQ Eight"
+          ],
+          "settings": {
+            "cut_mud": "200-400Hz"
+          }
+        },
+        {
+          "type": "compressor",
+          "purpose": "glue",
+          "plugin_suggestions": [
+            "Glue Compressor",
+            "SSL G-Master"
+          ],
+          "settings": {
+            "ratio": "4:1",
+            "attack": "slow"
+          }
+        },
+        {
+          "type": "saturation",
+          "purpose": "punch",
+          "plugin_suggestions": [
+            "Saturator",
+            "Drum Buss"
+          ],
+          "settings": {
+            "drive": "subtle"
+          }
+        },
+        {
+          "type": "limiter",
+          "purpose": "control",
+          "plugin_suggestions": [
+            "Limiter"
+          ]
+        }
+      ],
+      "confidence": 0.9
+    },
+    "master_standard": {
+      "artist_or_style": "standard",
+      "track_type": "master",
+      "researched_date": "2025-12-21",
+      "sources": [
+        "builtin_knowledge"
+      ],
+      "description": "Standard mastering chain",
+      "chain": [
+        {
+          "type": "eq",
+          "purpose": "tonal_balance",
+          "plugin_suggestions": [
+            "EQ Eight",
+            "FabFilter Pro-Q 3"
+          ],
+          "settings": {
+            "corrective": true
+          }
+        },
+        {
+          "type": "compressor",
+          "purpose": "glue",
+          "plugin_suggestions": [
+            "Glue Compressor",
+            "Multiband Dynamics"
+          ],
+          "settings": {
+            "ratio": "2:1",
+            "gentle": true
+          }
+        },
+        {
+          "type": "limiter",
+          "purpose": "loudness",
+          "plugin_suggestions": [
+            "Limiter",
+            "FabFilter Pro-L 2"
+          ],
+          "settings": {
+            "target": "-14 LUFS",
+            "true_peak": "-1dB"
+          }
+        }
+      ],
+      "confidence": 0.9
+    },
+    "artist_vocal": {
+      "artist_or_style": "artist",
+      "track_type": "vocal",
+      "researched_date": "2026-02-10",
+      "sources": [
+        "https://example.com/article",
+        "https://youtube.com/watch?v=test"
+      ],
+      "description": "Compiled from 2 sources in cheap mode.",
+      "chain": [
+        {
+          "name": "EQ Eight",
+          "type": "eq",
+          "purpose": "Cleanup",
+          "settings": {
+            "1 Gain A": -2.5
+          }
+        },
+        {
+          "name": "Compressor",
+          "type": "compressor",
+          "purpose": "Control",
+          "settings": {
+            "Threshold": -18
+          }
+        }
+      ],
+      "confidence": 0.7000000000000001
+    },
+    "artist_vocal_chain_vocal": {
+      "artist_or_style": "artist vocal chain",
+      "track_type": "vocal",
+      "researched_date": "2026-02-14",
+      "sources": [
+        "user_added"
+      ],
+      "description": "Generic vocal chain \u2014 LLM research was unavailable.",
+      "chain": [
+        {
+          "name": "EQ Eight",
+          "type": "eq",
+          "purpose": "high_pass_cleanup",
+          "settings": {}
+        },
+        {
+          "name": "Compressor",
+          "type": "compressor",
+          "purpose": "dynamics_control",
+          "settings": {}
+        },
+        {
+          "name": "EQ Eight",
+          "type": "eq",
+          "purpose": "tone_shaping",
+          "settings": {}
+        },
+        {
+          "name": "Reverb",
+          "type": "reverb",
+          "purpose": "space",
+          "settings": {}
+        }
+      ],
+      "confidence": 0.4
+    },
+    "test_query_vocal": {
+      "artist_or_style": "test query",
+      "track_type": "vocal",
+      "researched_date": "2026-02-14",
+      "sources": [
+        "user_added"
+      ],
+      "description": "Generic vocal chain \u2014 LLM research was unavailable.",
+      "chain": [
+        {
+          "name": "EQ Eight",
+          "type": "eq",
+          "purpose": "high_pass_cleanup",
+          "settings": {}
+        },
+        {
+          "name": "Compressor",
+          "type": "compressor",
+          "purpose": "dynamics_control",
+          "settings": {}
+        },
+        {
+          "name": "EQ Eight",
+          "type": "eq",
+          "purpose": "tone_shaping",
+          "settings": {}
+        },
+        {
+          "name": "Reverb",
+          "type": "reverb",
+          "purpose": "space",
+          "settings": {}
+        }
+      ],
+      "confidence": 0.4
+    },
+    "travis_scott_vocal_chain_vocal": {
+      "artist_or_style": "Travis Scott Vocal Chain",
+      "track_type": "vocal",
+      "researched_date": "2026-02-14",
+      "sources": [
+        "user_added"
+      ],
+      "description": "Generic vocal chain \u2014 LLM research was unavailable.",
+      "chain": [
+        {
+          "name": "EQ Eight",
+          "type": "eq",
+          "purpose": "high_pass_cleanup",
+          "settings": {}
+        },
+        {
+          "name": "Compressor",
+          "type": "compressor",
+          "purpose": "dynamics_control",
+          "settings": {}
+        },
+        {
+          "name": "EQ Eight",
+          "type": "eq",
+          "purpose": "tone_shaping",
+          "settings": {}
+        },
+        {
+          "name": "Reverb",
+          "type": "reverb",
+          "purpose": "space",
+          "settings": {}
+        }
+      ],
+      "confidence": 0.4
+    },
+    "travis_scott_vocal": {
+      "artist_or_style": "Travis Scott",
+      "track_type": "vocal",
+      "researched_date": "2026-02-14",
+      "sources": [
+        "user_added"
+      ],
+      "description": "Pitch-forward trap vocals with controlled dynamics, bright top-end, and slightly gritty harmonic density. The lead sits upfront while time-based effects create width and depth without washing out articulation. The overall sound is polished, compressed, and atmospheric.",
+      "chain": [
+        {
+          "name": "EQ Eight",
+          "type": "eq",
+          "purpose": "Remove low-end rumble and reduce muddy low-mids before compression.",
+          "settings": {
+            "Band 1 Filter Type": 0,
+            "Band 1 Frequency": 95,
+            "Band 1 Gain": 0,
+            "Band 1 Q": 0.71,
+            "Band 2 Filter Type": 3,
+            "Band 2 Frequency": 300,
+            "Band 2 Gain": -3.2,
+            "Band 2 Q": 1.15,
+            "Output Gain": 0
+          }
+        },
+        {
+          "name": "Compressor",
+          "type": "compressor",
+          "purpose": "Primary vocal leveling and transient control to keep the vocal consistently forward.",
+          "settings": {
+            "Threshold": -19,
+            "Ratio": 4,
+            "Attack": 7,
+            "Release": 75,
+            "Knee": 6,
+            "Makeup": 3,
+            "Dry Wet": 100,
+            "Output Gain": 0
+          }
+        },
+        {
+          "name": "Multiband Dynamics",
+          "type": "de-esser",
+          "purpose": "Control sibilance by compressing the high band dynamically.",
+          "settings": {
+            "High Threshold": -25,
+            "High Ratio": 3,
+            "High Attack": 2,
+            "High Release": 50,
+            "High Gain": -1.2,
+            "Dry Wet": 100,
+            "Output Gain": 0
+          }
+        },
+        {
+          "name": "Saturator",
+          "type": "saturation",
+          "purpose": "Add harmonic richness and slight edge for modern trap vocal density.",
+          "settings": {
+            "Drive": 4,
+            "Base": 210,
+            "Frequency": 7000,
+            "Depth": 0,
+            "Output": -2,
+            "Dry Wet": 40
+          }
+        },
+        {
+          "name": "EQ Eight",
+          "type": "eq",
+          "purpose": "Add presence and air after dynamics/saturation processing.",
+          "settings": {
+            "Band 5 Filter Type": 2,
+            "Band 5 Frequency": 4800,
+            "Band 5 Gain": 2.4,
+            "Band 5 Q": 0.9,
+            "Band 8 Filter Type": 1,
+            "Band 8 Frequency": 12500,
+            "Band 8 Gain": 3.8,
+            "Band 8 Q": 0.7,
+            "Output Gain": 0
+          }
+        },
+        {
+          "name": "Reverb",
+          "type": "reverb",
+          "purpose": "Create dark atmospheric tail while preserving lead intelligibility.",
+          "settings": {
+            "PreDelay": 24,
+            "Decay Time": 2.4,
+            "Size": 90,
+            "Low Cut": 180,
+            "High Cut": 7000,
+            "Stereo": 120,
+            "Dry Wet": 10,
+            "Output Gain": 0
+          }
+        },
+        {
+          "name": "Delay",
+          "type": "delay",
+          "purpose": "Add tempo-synced width and rhythmic tail movement.",
+          "settings": {
+            "Sync": 1,
+            "Time Left": 3,
+            "Time Right": 2,
+            "Feedback": 30,
+            "Filter Low": 220,
+            "Filter High": 6500,
+            "Ping Pong": 1,
+            "Dry Wet": 12,
+            "Output Gain": 0
+          }
+        },
+        {
+          "name": "Limiter",
+          "type": "limiter",
+          "purpose": "Catch remaining peaks and stabilize final vocal output.",
+          "settings": {
+            "Gain": 2,
+            "Ceiling": -1,
+            "Release": 55
+          }
+        },
+        {
+          "name": "Utility",
+          "type": "utility",
+          "purpose": "Final gain staging and stereo width control.",
+          "settings": {
+            "Gain": 0,
+            "Width": 100,
+            "Bass Mono": 120,
+            "Mute": 0
+          }
+        }
+      ],
+      "confidence": 0.8
+    },
+    "future_vocal_chain_vocal": {
+      "artist_or_style": "future vocal chain",
+      "track_type": "vocal",
+      "researched_date": "2026-02-14",
+      "sources": [
+        "user_added"
+      ],
+      "description": "fresh",
+      "chain": [
+        {
+          "name": "EQ Eight",
+          "type": "eq",
+          "purpose": "cleanup",
+          "settings": {}
+        }
+      ],
+      "confidence": 0.8
+    },
+    "new_artist_vocal_chain_vocal": {
+      "artist_or_style": "new artist vocal chain",
+      "track_type": "vocal",
+      "researched_date": "2026-02-14",
+      "sources": [
+        "user_added"
+      ],
+      "description": "fresh",
+      "chain": [
+        {
+          "name": "EQ Eight",
+          "type": "eq",
+          "purpose": "cleanup",
+          "settings": {}
+        }
+      ],
+      "confidence": 0.8
+    }
+  },
+  "waves_vocal_chains": {
+    "cla_modern_pop": {
+      "description": "CLA-flavored modern pop/R&B vocal",
+      "track_type": "vocal",
+      "chain": [
+        {
+          "type": "cleanup",
+          "purpose": "cleanup pre-pass",
+          "plugin_suggestions": [
+            "Clarity Vx Stereo",
+            "Clarity Vx Mono",
+            "Clarity Vx",
+            "Clarity Vx Pro Stereo",
+            "Clarity Vx Pro"
+          ]
+        },
+        {
+          "type": "de-esser",
+          "purpose": "adaptive de-ess",
+          "plugin_suggestions": [
+            "Sibilance Stereo",
+            "Sibilance Mono",
+            "Sibilance",
+            "DeEsser Stereo",
+            "DeEsser"
+          ]
+        },
+        {
+          "type": "channel_strip",
+          "purpose": "main curated chain",
+          "plugin_suggestions": [
+            "CLA Vocals Stereo",
+            "CLA Vocals Mono",
+            "CLA Vocals"
+          ],
+          "settings": {
+            "Bass": 0.45,
+            "Treble": 0.55,
+            "Compress": 0.5,
+            "Reverb": 0.3,
+            "Delay": 0.2,
+            "Pitch": 0.0
+          }
+        },
+        {
+          "type": "leveler",
+          "purpose": "level automation",
+          "plugin_suggestions": [
+            "Vocal Rider Stereo",
+            "Vocal Rider Mono",
+            "Vocal Rider"
+          ]
+        },
+        {
+          "type": "exciter",
+          "purpose": "top-end air",
+          "plugin_suggestions": [
+            "Aphex Vintage Exciter Stereo",
+            "Aphex Vintage Exciter Mono",
+            "Aphex Vintage Aural Exciter"
+          ],
+          "settings": {
+            "Input": 0.3,
+            "AX Mix": 0.2
+          }
+        }
+      ]
+    },
+    "greg_wells_pop_ballad": {
+      "description": "Wells-flavored pop ballad / midtempo",
+      "track_type": "vocal",
+      "chain": [
+        {
+          "type": "cleanup",
+          "purpose": "cleanup pre-pass",
+          "plugin_suggestions": [
+            "Clarity Vx Stereo",
+            "Clarity Vx Mono",
+            "Clarity Vx",
+            "Clarity Vx Pro Stereo",
+            "Clarity Vx Pro"
+          ]
+        },
+        {
+          "type": "de-esser",
+          "purpose": "adaptive de-ess",
+          "plugin_suggestions": [
+            "Sibilance Stereo",
+            "Sibilance Mono",
+            "Sibilance",
+            "DeEsser Stereo",
+            "DeEsser"
+          ]
+        },
+        {
+          "type": "channel_strip",
+          "purpose": "main curated chain",
+          "plugin_suggestions": [
+            "Greg Wells VoiceCentric Stereo",
+            "Greg Wells VoiceCentric Mono",
+            "Greg Wells VoiceCentric"
+          ],
+          "settings": {
+            "Vocal": 0.5,
+            "Reverb": 0.4,
+            "Compression": 0.4
+          }
+        },
+        {
+          "type": "leveler",
+          "purpose": "level automation",
+          "plugin_suggestions": [
+            "Vocal Rider Stereo",
+            "Vocal Rider Mono",
+            "Vocal Rider"
+          ]
+        },
+        {
+          "type": "reverb",
+          "purpose": "send space",
+          "plugin_suggestions": [
+            "H-Reverb Stereo",
+            "H-Reverb Mono",
+            "H-Reverb",
+            "RVerb Stereo",
+            "RVerb"
+          ],
+          "send": true,
+          "settings": {
+            "Predelay": 0.2,
+            "Decay": 1.8,
+            "Mix": 0.15
+          }
+        }
+      ]
+    },
+    "eddie_kramer_rock_rap": {
+      "description": "Kramer-flavored rock/rap vocal",
+      "track_type": "vocal",
+      "chain": [
+        {
+          "type": "cleanup",
+          "purpose": "cleanup pre-pass",
+          "plugin_suggestions": [
+            "Clarity Vx Stereo",
+            "Clarity Vx Mono",
+            "Clarity Vx",
+            "Clarity Vx Pro Stereo",
+            "Clarity Vx Pro"
+          ]
+        },
+        {
+          "type": "de-esser",
+          "purpose": "adaptive de-ess",
+          "plugin_suggestions": [
+            "Sibilance Stereo",
+            "Sibilance Mono",
+            "Sibilance",
+            "DeEsser Stereo",
+            "DeEsser"
+          ]
+        },
+        {
+          "type": "channel_strip",
+          "purpose": "main curated chain",
+          "plugin_suggestions": [
+            "Eddie Kramer Vocal Channel Stereo",
+            "Eddie Kramer Vocal Channel Mono",
+            "Eddie Kramer Vocal Channel"
+          ],
+          "settings": {
+            "Drive": 0.4,
+            "Compress": 0.6,
+            "EQ_Low": 0.45,
+            "EQ_High": 0.55
+          }
+        },
+        {
+          "type": "leveler",
+          "purpose": "level automation",
+          "plugin_suggestions": [
+            "Vocal Rider Stereo",
+            "Vocal Rider Mono",
+            "Vocal Rider"
+          ]
+        },
+        {
+          "type": "delay_reverb",
+          "purpose": "send ambience",
+          "plugin_suggestions": [
+            "CLA EPIC Stereo",
+            "CLA EPIC Mono",
+            "CLA EPIC"
+          ],
+          "send": true,
+          "settings": {
+            "Reverb": 0.2,
+            "Delay": 0.25,
+            "Mix": 0.15
+          }
+        }
+      ]
+    },
+    "clean_modern_neutral": {
+      "description": "Minimal, transparent fallback",
+      "track_type": "vocal",
+      "chain": [
+        {
+          "type": "cleanup",
+          "purpose": "cleanup pre-pass",
+          "plugin_suggestions": [
+            "Clarity Vx Stereo",
+            "Clarity Vx Mono",
+            "Clarity Vx",
+            "Clarity Vx Pro Stereo",
+            "Clarity Vx Pro"
+          ]
+        },
+        {
+          "type": "de-esser",
+          "purpose": "adaptive de-ess",
+          "plugin_suggestions": [
+            "Sibilance Stereo",
+            "Sibilance Mono",
+            "Sibilance",
+            "DeEsser Stereo",
+            "DeEsser"
+          ]
+        },
+        {
+          "type": "compressor",
+          "purpose": "transparent vocal control",
+          "plugin_suggestions": [
+            "Renaissance Vox Stereo",
+            "Renaissance Vox Mono",
+            "Renaissance Vox",
+            "RVox Stereo",
+            "RVox"
+          ]
+        },
+        {
+          "type": "leveler",
+          "purpose": "level automation",
+          "plugin_suggestions": [
+            "Vocal Rider Stereo",
+            "Vocal Rider Mono",
+            "Vocal Rider"
+          ]
+        },
+        {
+          "type": "reverb",
+          "purpose": "small room",
+          "plugin_suggestions": [
+            "TrueVerb Stereo",
+            "TrueVerb Mono",
+            "TrueVerb",
+            "RVerb Stereo",
+            "RVerb"
+          ],
+          "settings": {
+            "Decay": 1.0,
+            "Mix": 0.1
+          }
+        }
+      ]
+    }
+  },
+  "presets": {
+    "vocal_basic": [
+      "eq",
+      "compressor",
+      "reverb"
+    ],
+    "vocal_full": [
+      "eq",
+      "compressor",
+      "de-esser",
+      "saturation",
+      "eq",
+      "reverb",
+      "delay"
+    ],
+    "vocal_minimal": [
+      "compressor",
+      "reverb"
+    ],
+    "drums_basic": [
+      "eq",
+      "compressor",
+      "limiter"
+    ],
+    "drums_full": [
+      "eq",
+      "compressor",
+      "saturation",
+      "limiter"
+    ],
+    "bass_basic": [
+      "eq",
+      "compressor"
+    ],
+    "bass_full": [
+      "eq",
+      "compressor",
+      "saturation"
+    ],
+    "master_basic": [
+      "eq",
+      "limiter"
+    ],
+    "master_full": [
+      "eq",
+      "compressor",
+      "limiter"
+    ]
+  }
+}

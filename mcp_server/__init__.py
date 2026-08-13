@@ -1,0 +1,2 @@
+"""LivePilot MCP server package."""
+

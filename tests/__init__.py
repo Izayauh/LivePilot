@@ -1,4 +1,1 @@
-"""
-Tests for Jarvis Ableton System
-"""
-
+"""LivePilot unit tests."""
