@@ -1,32 +1,73 @@
-# Jarvis Ableton - Voice-Controlled Music Production
+# LivePilot
 
-A voice-controlled AI assistant for Ableton Live 11, powered by Google Gemini 2.5. Control your DAW hands-free using natural language commands.
+A model-agnostic MCP server that gives AI models deterministic, verifiable control of Ableton Live.
 
-## Features
+Any MCP-capable model connects and calls the tools directly — there is no model-specific
+glue and no vendor lock-in. LivePilot exposes 72 tools covering tracks, devices, plugins,
+transport, mixing, and session state.
 
-- 🎤 **Voice Control**: Control Ableton Live using natural language through Gemini's real-time audio streaming
-- 🎹 **Comprehensive Controls**: Playback, transport, track controls, scenes, clips, and more
-- 🤖 **AI-Powered**: Uses Google Gemini 2.5 Flash with function calling
-- 🔊 **Voice Feedback**: Jarvis responds with voice confirmations
-- 📡 **OSC Bridge**: Communicates with Ableton via OSC protocol
-- 💬 **Desktop Text Chat UI**: Local non-browser chat window for text-only control
-- 🎚️ **Waves Vocal Chains**: Waves-first vocal chain templates with local preference learning; see `docs/vocal-chains.md`
-- ⚖️ **Reference A/B Setup**: Register local references and set up loudness-matched vocal comparisons; see `docs/comparison-workflow.md`
+The design constraint that shaped everything else: **an agent should never have to assume a
+change landed.** Every write has a corresponding read. Set a device parameter and you can
+read it back and confirm the value. Ask for a track's state and you get the actual state,
+not the state the model believed it was creating. When something fails, it fails visibly
+rather than silently drifting out of sync with the DAW.
 
-## Prerequisites
+That property is the point of the project. Natural-language DAW control is not hard to
+demo and easy to trust — the hard part is making an autonomous caller's actions auditable
+after the fact.
 
-1. **Ableton Live 11** (or compatible version)
-2. **AbletonOSC Plugin** - Install from [AbletonOSC GitHub](https://github.com/ideoforms/AbletonOSC)
-3. **Python 3.8+**
-4. **Google Gemini API Key** - Get from [Google AI Studio](https://aistudio.google.com/app/apikey)
-5. **Audio Input Device** (microphone)
+## What it does
+
+- **Tracks** — create MIDI, audio, and return tracks; rename, color, duplicate, delete; query and set volume, pan, sends, mute, solo, and arm state
+- **Devices and plugins** — discover available plugins, add devices to tracks, enable and disable them, read every parameter on a device, and set parameters individually, by name, or in batches
+- **Transport and session** — play, stop, continue, set position, loop start and length, tempo, metronome, fire clips and scenes, start and stop recording
+- **State and diagnostics** — enumerate tracks and devices, look up tracks by name, list armed tracks, and run an OSC connectivity check before committing to any write
+
+## How it works
+
+```
+MCP client (any model)  ->  LivePilot MCP server  ->  OSC  ->  AbletonOSC  ->  Ableton Live
+                                     |
+                              readback path
+                        (confirm the value that actually landed)
+```
+
+LivePilot speaks MCP upward to the model and OSC downward to AbletonOSC, Ableton's remote
+script. Tools are deterministic: same call, same effect, and a readback available to prove it.
+
+## Requirements
+
+- Ableton Live 11 or later
+- [AbletonOSC](https://github.com/ideoforms/AbletonOSC) installed and selected as a Control Surface
+  in Preferences → Link/Tempo/MIDI (port 11000)
+- Python 3.8+
+- An MCP-capable client (e.g. Claude Code, Cursor, OpenClaw)
+
+## Status and scope
+
+LivePilot is a working tool used in a real studio workflow, and it is honest about what it
+is not. It has not had an independent security review, it assumes a trusted local
+environment, and it has known rough edges around logging and error handling. Treat it as a
+capable prototype and personal studio tool rather than production software.
+
+Known operational gotcha: a stale `run_mcp_server.py` process can bind UDP port `11001`,
+which AbletonOSC uses for responses. Ableton will still look healthy on `11000`/`11002`
+while every state query times out. Kill the process holding `11001` and retry before
+diagnosing anything deeper.
+
+## History
+
+LivePilot began as JarvisAbleton, a Gemini-driven voice assistant for Ableton. It has since
+been rebuilt around MCP and the readback-verification model described above. GitHub
+redirects the old URL; use `https://github.com/Izayauh/LivePilot.git`.
 
 ## Installation
 
-### 1. Clone or Download this Repository
+### 1. Clone this Repository
 
 ```bash
-cd JarvisAbleton
+git clone https://github.com/Izayauh/LivePilot.git
+cd LivePilot
 ```
 
 ### 2. Create Virtual Environment
@@ -46,26 +87,7 @@ Activate it:
 pip install -r requirements.txt
 ```
 
-### 4. Configure Environment Variables
-
-Copy `.env.example` to `.env`:
-
-```bash
-cp .env.example .env
-```
-
-Windows PowerShell alternative:
-```powershell
-Copy-Item .env.example .env
-```
-
-Edit `.env` and add your Google Gemini API key:
-
-```
-GOOGLE_API_KEY=your_actual_api_key_here
-```
-
-### 5. Setup AbletonOSC
+### 4. Setup AbletonOSC
 
 1. Download and install [AbletonOSC](https://github.com/ideoforms/AbletonOSC)
 2. Place the AbletonOSC MIDI Remote Script in Ableton's MIDI Remote Scripts folder:
@@ -75,74 +97,35 @@ GOOGLE_API_KEY=your_actual_api_key_here
 4. Select "AbletonOSC" from the dropdown
 5. Verify the OSC server is running on port **11000** (default)
 
-## Usage
+## Quick Start
 
-### Start Jarvis
+### MCP (Claude Code / Cursor)
 
-1. **Launch Ableton Live** with AbletonOSC enabled
-2. **Activate your virtual environment**
-3. **Run Jarvis**:
-
-```bash
-python jarvis_engine.py
-```
-
-You should see:
-
-```
---- Testing Ableton OSC Connection ---
-✓ OSC Bridge connected successfully
---- Jarvis Online (Hamilton Studio) ---
-Available functions: 22
->>> Jarvis is listening (Hamilton Studio)...
-```
-
-### Start Desktop Text Chat UI (No Mic)
-
-If you want local text-only conversation (no browser UI):
-
-```bash
-python jarvis_text_ui.py
-```
-
-This opens a desktop chat window that uses the same function-calling control path as text mode.
-
-### Start Desktop Chat — OpenClaw (No API Keys)
-
-Desktop chat window (Tkinter) that routes through OpenClaw relay — no Gemini or OpenAI keys needed.
-
-**From Windows PowerShell:**
+Run the stdio MCP server:
 ```powershell
-cd C:\Users\isaia\Documents\JarvisAbleton
-.\venv\Scripts\python.exe jarvis_desktop_openclaw.py
+python run_mcp_server.py
 ```
 
-**From WSL:**
+To configure with Claude Code:
+```powershell
+claude mcp add --scope user live-pilot -- python C:\Users\isaia\Projects\music\live-pilot\run_mcp_server.py
+```
+
+### Ableton Bridge CLI
+
+You can also run deterministic bridge commands directly from the command line:
+
 ```bash
-cd /mnt/c/Users/isaia/Documents/JarvisAbleton
-./venv/Scripts/python.exe jarvis_desktop_openclaw.py
+python ableton_bridge.py --list              # list all 72 functions
+python ableton_bridge.py diag_osc '{}'       # test OSC connectivity
+python ableton_bridge.py get_track_list '{}'  # query Ableton tracks
+python ableton_bridge.py get_creative_context '{}' # structured creative context
+python ableton_bridge.py analyze_clip_context '{"track_index":0,"clip_index":0}' # MIDI clip summary
+python ableton_bridge.py analyze_rhythm_context '{"track_index":2,"clip_index":0,"role":"drums"}' # MIDI-only rhythm grid alignment
+python ableton_bridge.py plan_arrangement_move '{"goal":"make the hook lift without adding busy drums","target_section":"hook"}' # reviewable plan only
+python ableton_bridge.py set_project_intent '{"genre":"rnb","mood":"intimate","references":["Trust Me - The Fray"],"arrangement_goal":"preserve groove while improving emotional lift","avoid":["fake listening claims"]}'
+python ableton_bridge.py get_project_intent '{}'
 ```
-
-Type `/health` in the chat input to test relay connectivity.
-
-> **Ableton Bridge**: The OpenClaw desktop app uses the `main` agent by default,
-> which has access to Ableton controls via `ableton_bridge.py`. The agent calls the
-> bridge CLI through its `exec` tool to run OSC commands (get tracks, mute, set tempo,
-> load plugins, etc.). **Ableton Live must be running with AbletonOSC loaded** for
-> these commands to work. If Ableton is not running, the bridge returns an error JSON
-> and the agent relays the message gracefully.
->
-> You can also use the bridge directly from the command line:
-> ```bash
-> ./venv/Scripts/python.exe ableton_bridge.py --list              # list all functions
-> ./venv/Scripts/python.exe ableton_bridge.py get_track_list '{}'  # query Ableton
-> ./venv/Scripts/python.exe ableton_bridge.py get_creative_context '{}' # structured creative context
-> ./venv/Scripts/python.exe ableton_bridge.py analyze_clip_context '{"track_index":0,"clip_index":0}' # MIDI clip summary where available
-> ./venv/Scripts/python.exe ableton_bridge.py analyze_rhythm_context '{"track_index":2,"clip_index":0,"role":"drums"}' # MIDI-only rhythm grid alignment
-> ./venv/Scripts/python.exe ableton_bridge.py plan_arrangement_move '{"goal":"make the hook lift without adding busy drums","target_section":"hook"}' # reviewable plan only
-> ./venv/Scripts/python.exe ableton_bridge.py set_project_intent '{"genre":"rnb","mood":"intimate","references":["Trust Me - The Fray"],"arrangement_goal":"preserve groove while improving emotional lift","avoid":["fake listening claims"]}'
-> ./venv/Scripts/python.exe ableton_bridge.py get_project_intent '{}'
-> ```
 
 Example `get_creative_context` output:
 
@@ -284,55 +267,43 @@ Known v1 limitations:
 - Some live Ableton fields may be reported as missing if the current controller does not expose them.
 - Audio, key, energy, and section analysis are intentionally out of scope for the current context milestones.
 
-### Start WSL Terminal Chat (OpenClaw, No API Keys)
+### Optional Legacy Entry Points
 
-Pure terminal chat (no window) — for WSL-only sessions:
+#### Desktop Text Chat UI (No Mic)
+
+Local desktop chat window (Tkinter):
 
 ```bash
-cd /mnt/c/Users/isaia/Documents/JarvisAbleton
+python jarvis_text_ui.py
+```
+
+#### OpenClaw Desktop Chat / WSL CLI
+
+Desktop chat window routing through OpenClaw relay:
+
+```powershell
+python jarvis_desktop_openclaw.py
+```
+
+Or pure terminal chat in WSL:
+
+```bash
 python3 jarvis_text_cli_wsl.py
 ```
 
-> **Note**: Use WSL-native `python3` for the CLI version.
-> The desktop app above uses Windows Python and calls `wsl.exe` to reach OpenClaw.
+#### Voice Assistant (Original Prototype)
 
-Built-in commands: `/health` (connectivity check), `/quit` (exit).
-
-### Example Voice Commands
-
-Once Jarvis is running, you can say:
-
-**Playback Controls:**
-- "Play" / "Start playback"
-- "Stop" / "Stop playback"
-- "Start recording"
-- "Turn on the metronome" / "Turn off the metronome"
-
-**Transport Controls:**
-- "Set tempo to 120 BPM"
-- "Set the loop to 4 beats"
-- "Enable the loop"
-
-**Track Controls:**
-- "Mute track 1" / "Unmute track 2"
-- "Solo track 3"
-- "Arm track 1 for recording"
-- "Set track 2 volume to 0.8"
-- "Pan track 1 to the left" (use negative values)
-
-**Scene & Clip Controls:**
-- "Fire scene 1"
-- "Launch the clip on track 2, slot 3"
-- "Stop all clips on track 1"
+To run the original voice assistant flow:
+1. Configure `GOOGLE_API_KEY` in `.env`
+2. Run `python jarvis_engine.py`
 
 ### Important: Track Indexing
 
 **Track 1 in Ableton = Index 0 in the code**
 
-Jarvis understands this automatically:
-- When you say "Track 1", Jarvis uses `track_index=0`
-- When you say "Track 2", Jarvis uses `track_index=1`
-- Same for scenes and clip slots
+- When addressing Track 1, tools use `track_index=0`
+- When addressing Track 2, tools use `track_index=1`
+- Same 0-based indexing applies to scenes and clip slots.
 
 ## Testing
 
@@ -347,75 +318,52 @@ This will toggle the metronome on/off. Check if the metronome icon in Ableton tu
 ## Project Structure
 
 ```
-JarvisAbleton/
-├── jarvis_engine.py                # Main voice control engine
-├── jarvis_tools.py                 # Gemini function declarations
-├── ableton_bridge.py               # CLI bridge for OpenClaw agents (no Gemini)
+LivePilot/
+├── run_mcp_server.py               # FastMCP stdio entrypoint
+├── mcp_server/                     # MCP protocol wrapper
+├── ableton_bridge.py               # Deterministic CLI bridge (72 functions)
 ├── ableton_controls/               # Ableton integration package
-│   ├── controller.py               # OSC communication + process convenience methods
+│   ├── controller.py               # OSC communication + process lifecycle
 │   ├── process_manager.py          # Open/Close/Restart Ableton, crash dialog handling
-│   └── reliable_params.py          # Retry-resilient parameter setting
-├── agents/                         # Multi-agent AI pipeline
-├── knowledge/                      # Plugin chain KB, device KB
-├── research/                       # Web + YouTube research
-├── discovery/                      # VST discovery, device intelligence
-├── context/                        # Session management, persistence
-├── config/                         # OSC paths, settings
+│   └── reliable_params.py          # Parameter readback and verification
+├── livepilot_tools/                # Deterministic tool modules (context, recipes, contracts)
+├── config/                         # OSC paths, vocal chains, settings
+├── data/recipes/                   # Plugin parameter snapshots
+├── scripts/                        # Utility & workflow scripts
 ├── tests/                          # Test suite with crash recovery
-│   ├── ableton_process_manager.py  # Backward-compat stub (re-exports from ableton_controls)
-│   ├── crash_resilient_wrapper.py  # Crash detection + auto-recovery
-│   └── run_incremental_test.py     # Incremental chain tests
 ├── docs/                           # Documentation
-├── requirements.txt                # Python dependencies
-├── .env                            # Environment variables (not in git)
-├── .env.example                    # Environment template
-├── docs/architecture_visualization.html # Interactive architecture diagram
-└── README.md                       # This file
+└── legacy/                         # Archived Jarvis voice engine and agent prototypes
 ```
 
 ## Architecture
 
 ```
-┌─────────────────┐
-│  Your Voice     │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────────────┐
-│   Gemini 2.5 Flash      │ ◄── Real-time audio streaming
-│   (Function Calling)    │     + Tool definitions (62 functions)
-└────────┬────────────────┘
-         │
-         ▼
-┌─────────────────────────┐
-│   jarvis_engine.py      │ ◄── Receives function calls
-│   + 6 AI Agents         │     Routes to agents/controllers
-└────────┬────────────────┘
-         │
-         ▼
-┌──────────────────────────────────────────┐
-│  ableton_controls/                       │
-│  ├── controller.py  (OSC, port 11000)    │ ◄── OSC Client + process lifecycle
-│  └── process_manager.py                  │ ◄── Open/Close/Restart/Crash Recovery
-└────────┬─────────────────────────────────┘
-         │
-         ▼
-┌─────────────────────────┐
-│   AbletonOSC Bridge     │
-│   + JarvisDeviceLoader  │
-└────────┬────────────────┘
-         │
-         ▼
-┌─────────────────────────┐
-│   Ableton Live 11       │
-└─────────────────────────┘
+┌────────────────────────────────────────────────────────┐
+│  MCP Client (Claude Code, Cursor, OpenClaw, any model) │
+└───────────────────────────┬────────────────────────────┘
+                            │ (stdio JSON-RPC)
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│             LivePilot MCP Server / Bridge              │
+│       (run_mcp_server.py / ableton_bridge.py)          │
+└───────────────────────────┬────────────────────────────┘
+                            │ (OSC, port 11000 / 11002)
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│       AbletonOSC Remote Script + JarvisDeviceLoader    │
+└───────────────────────────┬────────────────────────────┘
+                            │
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│                     Ableton Live                       │
+└────────────────────────────────────────────────────────┘
 ```
 
 ## Non-Chatty Execution Architecture
 
-The chain builder now uses a deterministic pipeline instead of iterative "chatty" loops.
+The chain builder uses a deterministic pipeline instead of iterative "chatty" loops.
 
-- Entry point: `build_chain_pipeline` (single Gemini tool call per chain)
+- Entry point: `build_chain_pipeline` (single tool call per chain)
 - Plan schema: `pipeline/schemas.py` (`ChainPipelinePlan`, `DeviceSpec`, `ParamSpec`)
 - Executor: `pipeline/executor.py` (`PLAN -> EXECUTE -> VERIFY -> REPORT`)
 - Guardrail: `pipeline/guardrail.py` (blocks extra LLM calls in execute/verify)
@@ -491,7 +439,7 @@ Use this checklist on your Ableton machine before deployment sign-off.
 
 ### Process Control
 
-Jarvis can programmatically manage the Ableton process:
+LivePilot can programmatically manage the Ableton process:
 
 ```python
 from ableton_controls import ableton
@@ -517,10 +465,11 @@ manager = get_ableton_manager(recovery_action="yes")  # "yes", "no", or "ask"
 - Check that AbletonOSC is selected in Ableton's Control Surface preferences
 - Verify AbletonOSC is configured to use port 11000
 - Try running `python tests/test_ableton.py` to verify OSC connectivity
+- Check if port 11001 is held by a stale Python process
 
 ### "No module named 'pyaudio'"
 
-On Windows, PyAudio might need manual installation:
+If using optional voice features on Windows, PyAudio might need manual installation:
 ```bash
 pip install pipwin
 pipwin install pyaudio
@@ -532,13 +481,7 @@ brew install portaudio
 pip install pyaudio
 ```
 
-### Audio Input Issues
-
-- Check your microphone is working and selected as the default input device
-- Ensure your system allows Python to access the microphone
-- Test with: `python -m pyaudio` to see available devices
-
-### Gemini API Errors
+### Gemini API Errors (Voice/Legacy Mode Only)
 
 - Verify your API key is correct in `.env`
 - Check you have API quota remaining
@@ -549,7 +492,6 @@ pip install pyaudio
 Feel free to open issues or submit pull requests for:
 - Additional Ableton controls
 - Improved error handling
-- Better voice command recognition
 - Documentation improvements
 
 ## License
@@ -558,11 +500,9 @@ This project is provided as-is for personal use.
 
 ## Credits
 
-- Built with [Google Gemini](https://deepmind.google/technologies/gemini/)
 - Uses [AbletonOSC](https://github.com/ideoforms/AbletonOSC) by ideoforms
 - Powered by [python-osc](https://github.com/attwad/python-osc)
 
 ---
 
 **Studio Location**: Hamilton, Ohio 🎵
-
