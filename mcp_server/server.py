@@ -110,5 +110,8 @@ def plan_arrangement_move(goal: str, target_section: str | None = None) -> dict[
 
 
 def main() -> None:
+    from mcp_server.instance_guard import run_guard
+
+    run_guard()
     mcp.run(transport="stdio")
 

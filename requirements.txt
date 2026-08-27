@@ -17,6 +17,10 @@ sounddevice>=0.4.6
 librosa>=0.10.0
 scipy>=1.10.0
 
+# ================ Process Management ================
+# Ableton process lifecycle + stale MCP server sweep (instance_guard)
+psutil>=5.9.0
+
 # ================ Environment ================
 # Environment variable management
 python-dotenv>=1.2.1
