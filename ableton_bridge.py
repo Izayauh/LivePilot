@@ -377,6 +377,55 @@ def add_utility_device(track_index: int, gain_db: float, name: str):
 # Function introspection
 # ---------------------------------------------------------------------------
 
+def get_device_parameter_range(track_index: int, device_index: int, param_index: int):
+    """Raw min/max plus current raw value and display string for one parameter."""
+    pmin, pmax = reliable_params.get_parameter_range(track_index, device_index, param_index)
+    cur = ableton.get_device_parameter_value_sync(track_index, device_index, param_index)
+    disp = ableton.get_device_parameter_value_string_sync(track_index, device_index, param_index)
+    return {
+        "success": bool(cur.get("success")),
+        "min": pmin, "max": pmax,
+        "value": cur.get("value"),
+        "value_string": disp.get("value_string"),
+        "message": cur.get("message"),
+    }
+
+
+def nudge_device_parameter(track_index: int, device_index: int, param_name: str, fraction: float):
+    """Move a parameter by a fraction of its raw range, no unit conversion.
+
+    Reads the raw current value and range, adds fraction * (max - min), clamps,
+    sends the raw value straight to Live, then reads back raw + display string.
+    This exists so "a bit more" works without knowing whether the control is
+    dB, Hz, ms, or a percentage.
+    """
+    param_index = reliable_params.find_parameter_index(track_index, device_index, param_name)
+    if param_index is None:
+        return {"success": False, "message": f"Parameter '{param_name}' not found"}
+    before = get_device_parameter_range(track_index, device_index, param_index)
+    if not before["success"] or before["value"] is None:
+        return {"success": False, "message": f"Could not read {param_name}: {before.get('message')}"}
+    span = float(before["max"]) - float(before["min"])
+    target = max(float(before["min"]), min(float(before["max"]),
+                 float(before["value"]) + float(fraction) * span))
+    ableton.set_device_parameter(track_index, device_index, param_index, target)
+    import time as _t
+    _t.sleep(0.15)
+    after = get_device_parameter_range(track_index, device_index, param_index)
+    actual = after.get("value")
+    verified = actual is not None and abs(float(actual) - target) <= max(1e-3, abs(span) * 0.01)
+    return {
+        "success": verified,
+        "verified": verified,
+        "param_name": param_name, "param_index": param_index,
+        "min": before["min"], "max": before["max"],
+        "before": before["value"], "before_string": before["value_string"],
+        "requested": target,
+        "actual": actual, "actual_string": after.get("value_string"),
+        "message": "Nudged and verified" if verified else f"Readback {actual} != {target}",
+    }
+
+
 def _describe_functions():
     """Return a dict describing all available functions, their args, and types."""
     descriptions = {
@@ -431,6 +480,8 @@ def _describe_functions():
         "get_device_parameters": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}}, "description": "Get device parameter names"},
         "get_device_parameter_value": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_index": {"type": "int", "required": True}}, "description": "Get device parameter value"},
         "get_device_parameter_value_string": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_index": {"type": "int", "required": True}}, "description": "Get device parameter display string"},
+        "get_device_parameter_range": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_index": {"type": "int", "required": True}}, "description": "Raw min/max, current raw value, and display string for a parameter"},
+        "nudge_device_parameter": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_name": {"type": "str", "required": True}, "fraction": {"type": "float", "required": True, "description": "Fraction of the raw range to move by, e.g. 0.1 or -0.1"}}, "description": "Move a parameter by a fraction of its range (raw, verified readback)"},
         "set_device_parameter": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_index": {"type": "int", "required": True}, "value": {"type": "float", "required": True}}, "description": "Set device parameter (verified)"},
         "set_device_parameter_by_name": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_name": {"type": "str", "required": True}, "value": {"type": "float", "required": True}}, "description": "Set device parameter by name"},
         "set_device_parameters_by_name": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "params": {"type": "dict", "required": True, "description": "{name: value, ...}"}}, "description": "Set multiple device parameters by name"},
@@ -549,7 +600,14 @@ def _build_dispatch(args: dict):
             track_index, _to_int(args.get("device_index")),
             _to_int(args.get("param_index"))),
 
+        "get_device_parameter_range": lambda: get_device_parameter_range(
+            track_index, _to_int(args.get("device_index")),
+            _to_int(args.get("param_index"))),
+
         # -- Device control --
+        "nudge_device_parameter": lambda: nudge_device_parameter(
+            track_index, _to_int(args.get("device_index")),
+            args.get("param_name"), float(args.get("fraction", 0.1))),
         "set_device_parameter": lambda: reliable_params.set_parameter_verified(
             track_index, _to_int(args.get("device_index")),
             _to_int(args.get("param_index")), args.get("value")),
@@ -634,6 +692,7 @@ TRACK_OPERATIONS = {
     "get_device_params_by_path", "get_device_name",
     "get_device_class_name", "get_device_parameters",
     "get_device_parameter_value", "get_device_parameter_value_string", "set_device_parameter",
+    "get_device_parameter_range", "nudge_device_parameter",
     "set_device_parameter_by_name", "set_device_parameters_by_name",
     "set_device_enabled",
     "add_plugin_to_track", "delete_device", "add_utility_device",

@@ -150,3 +150,11 @@ clause. `execute=True` runs the ready steps with `verify: true`. Clauses below
 the confidence gate come back as `escalate` and never run; do those the normal
 way. Mixer and transport only, never creative or device-parameter work. Key in
 `.env` as `TYPESAFE_API_KEY`. Code: `livepilot_tools/jev_dispatch.py`.
+
+**"A bit more / less of a device control, without a number"** (added 2026-09-18)
+`nudge_device_parameter(track_index, device_index, param_name, fraction)` moves a
+parameter by a fraction of its raw range (0.1 = a notch, 1.0 = all the way) and
+reads back raw + display string. No unit conversion, so it is safe on dB, Hz,
+ms, and percent alike. `get_device_parameter_range` returns min/max/current/
+display for one parameter. `jev_command` uses both for "a little drier",
+"longer tail", "tighten the attack", "crank the ratio all the way".

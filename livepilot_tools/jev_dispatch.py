@@ -73,10 +73,12 @@ BRIDGE: dict[str, tuple[str, dict[str, Any]]] = {
     "set_track_volume": ("set_track_volume", {}), "set_track_pan": ("set_track_pan", {}),
     "set_track_send": ("set_track_send", {}),
     "device_param": ("set_device_parameter_by_name", {}),
+    "device_nudge": ("nudge_device_parameter", {}),  # chosen in code, not by Jev
     "device_bypass": ("set_device_enabled", {"enabled": 0}),
     "device_enable": ("set_device_enabled", {"enabled": 1}),
 }
 DEVICE_ACTIONS = {"device_param", "device_bypass", "device_enable"}
+DEVICE_STEP = 0.1  # fraction of a parameter's raw range for "a bit more/less"
 DEVICE_GATE = 0.60  # min confidence on device and parameter choices
 
 NEEDS_TRACK = {"mute", "unmute", "solo", "unsolo", "arm", "disarm",
@@ -148,10 +150,10 @@ def _questions(track_names: list[str]) -> dict[str, dict[str, Any]]:
         },
         "direction": {
             "type": "choice",
-            "instructions": "Speculative: if `command` changes a level or pan without an exact number, "
-                            "which way?",
-            "criteria": {"up": "a bit louder, higher, more, or a bit right (for pan)",
-                         "down": "a bit quieter, lower, less, or a bit left (for pan)",
+            "instructions": "Speculative: if `command` changes a level, pan, or device control without "
+                            "an exact number, which way?",
+            "criteria": {"up": "a bit louder, higher, more, longer, wetter, or a bit right (for pan)",
+                         "down": "a bit quieter, lower, less, shorter, drier, or a bit left (for pan)",
                          "max": "all the way up, full, hard right (for pan)",
                          "min": "all the way down, zero, silent, hard left (for pan)",
                          "center": "reset to center or default",
@@ -210,7 +212,7 @@ def _args_for(action: str, ans: dict[str, Any], clause: str,
 
 
 def _resolve_device(clause: str, action: str, track_index: int, track_name: str,
-                    dispatch) -> tuple[dict[str, Any], str | None]:
+                    dispatch, direction_answer: dict[str, Any] | None = None) -> tuple[dict[str, Any], str | None]:
     """Second Jev stage: pick the device, then (for device_param) the parameter.
 
     Options come from the live bridge, so Jev can only name what is really on
@@ -256,11 +258,18 @@ def _resolve_device(clause: str, action: str, track_index: int, track_name: str,
     if pans["choice"] == "none" or pans["confidence"] < DEVICE_GATE:
         return out, f"parameter unclear ({pans['choice']} @ {pans['confidence']:.2f})"
     nums = _numbers(clause, track_name, ans["choice"])
-    if not nums:
-        return out, (f"{pans['choice']} on {ans['choice']} needs an explicit value "
-                     "(relative device nudges are not supported)")
-    out.update({"param_name": pans["choice"], "value": nums[-1], "_param_confidence": pans["confidence"]})
-    return out, None
+    out.update({"param_name": pans["choice"], "_param_confidence": pans["confidence"]})
+    if nums:
+        out["value"] = nums[-1]
+        return out, None
+    direction = direction_answer.get("choice") if direction_answer else None
+    if direction in ("up", "down"):
+        out["_nudge"] = DEVICE_STEP if direction == "up" else -DEVICE_STEP
+        return out, None
+    if direction in ("max", "min"):
+        out["_nudge"] = 1.0 if direction == "max" else -1.0  # clamps to the range edge
+        return out, None
+    return out, f"{pans['choice']} on {ans['choice']} needs a value or a direction (more/less/max/off)"
 
 
 def plan_command(command: str, tracks: list[dict[str, Any]],
@@ -298,8 +307,10 @@ def plan_command(command: str, tracks: list[dict[str, Any]],
                 if dispatch is None:
                     problem = "device work needs a live bridge"
                 else:
-                    dev_args, problem = _resolve_device(clause, action, idx, track, dispatch)
+                    dev_args, problem = _resolve_device(clause, action, idx, track, dispatch, ans["direction"])
                     args.update(dev_args)
+                    if "_nudge" in args:
+                        fn = "nudge_device_parameter"
             step["function"], step["args"] = fn, args
             if problem:
                 step["status"], step["reason"] = "escalate", problem
@@ -319,8 +330,11 @@ def execute_plan(plan: dict[str, Any], dispatch) -> dict[str, Any]:
         if step["status"] != "ready":
             results.append({"clause": step["clause"], "skipped": step["reason"]})
             continue
-        args = {k: v for k, v in step["args"].items() if not k.startswith("_") or k == "_relative"}
+        args = {k: v for k, v in step["args"].items() if not k.startswith("_") or k in ("_relative", "_nudge")}
         rel = args.pop("_relative", None)
+        nudge = args.pop("_nudge", None)
+        if nudge is not None:
+            args["fraction"] = nudge
         if rel is not None:
             key = {"set_track_volume": "volume", "set_track_pan": "pan", "set_track_send": "level"}[step["function"]]
             getter = {"volume": "get_track_volume", "pan": "get_track_pan", "level": "get_track_send"}[key]
