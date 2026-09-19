@@ -86,6 +86,32 @@ def call_livepilot_tool(function_name: str, args: dict[str, Any] | None = None) 
 
 
 @mcp.tool()
+def jev_command(command: str, execute: bool = False) -> dict[str, Any]:
+    """Fast path for transport and mixer commands via TypeSafe Jev (~0.5 s).
+
+    Plain language in ("mute the vocals and set the tempo to 128"), a typed
+    plan out: one bridge function per clause with confidence. With
+    ``execute=True`` the ready steps run through the bridge with verify=True.
+    Steps marked ``escalate`` were below the confidence gate and are never run;
+    handle those the normal way. Device work: "bypass the eq on the vocal",
+    "set the threshold on the comp to -20" (explicit values only; the device
+    and parameter are picked from what is really on the track). Not creative.
+    """
+    from livepilot_tools.jev_dispatch import execute_plan, plan_command
+
+    track_list = _dispatch("get_track_list")
+    if not track_list.get("success"):
+        return {"success": False, "error": "could not read track list", "detail": track_list}
+    song = _dispatch("get_song_status")
+    plan = plan_command(command, track_list.get("tracks", []),
+                        song.get("data") if song.get("success") else None, dispatch=_dispatch)
+    out: dict[str, Any] = {"success": True, "plan": plan}
+    if execute:
+        out["execution"] = execute_plan(plan, _dispatch)
+    return out
+
+
+@mcp.tool()
 def get_creative_context() -> dict[str, Any]:
     """Get LivePilot's structured creative context snapshot."""
     return _dispatch("get_creative_context", {})
