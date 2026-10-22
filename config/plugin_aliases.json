@@ -1,0 +1,401 @@
+{
+  "version": "1.0",
+  "description": "Plugin name aliases for fuzzy matching. Maps colloquial names to exact Ableton device names.",
+
+  "_usage_notes": {
+    "canonical_name": "The exact name Ableton expects (case-sensitive)",
+    "aliases": "List of alternative names users might use",
+    "learned_aliases": "Aliases learned from user corrections (auto-populated)"
+  },
+
+  "aliases": {
+    "EQ Eight": {
+      "canonical": "EQ Eight",
+      "aliases": ["EQ8", "eq8", "Ableton EQ", "Eight Band EQ", "8 Band EQ", "EQ 8", "eq 8"],
+      "learned_aliases": []
+    },
+    "EQ Three": {
+      "canonical": "EQ Three",
+      "aliases": ["EQ3", "eq3", "Ableton 3-Band EQ", "3 Band EQ", "EQ 3", "eq 3"],
+      "learned_aliases": []
+    },
+    "Compressor": {
+      "canonical": "Compressor",
+      "aliases": ["Ableton Compressor", "comp", "Ableton Comp"],
+      "learned_aliases": []
+    },
+    "Glue Compressor": {
+      "canonical": "Glue Compressor",
+      "aliases": ["Glue", "Glue Comp", "Bus Compressor", "SSL Style", "SSL Comp", "glue compressor"],
+      "learned_aliases": []
+    },
+    "Multiband Dynamics": {
+      "canonical": "Multiband Dynamics",
+      "aliases": ["Multiband Compressor", "MB Dynamics", "MBD", "Multiband", "Multi-band Dynamics"],
+      "learned_aliases": []
+    },
+    "Limiter": {
+      "canonical": "Limiter",
+      "aliases": ["Ableton Limiter", "limit", "lim"],
+      "learned_aliases": []
+    },
+    "Saturator": {
+      "canonical": "Saturator",
+      "aliases": ["Ableton Saturation", "Sat", "Ableton Saturator", "saturation"],
+      "learned_aliases": []
+    },
+    "Pedal": {
+      "canonical": "Pedal",
+      "aliases": ["Ableton Distortion", "Distortion", "dist"],
+      "learned_aliases": []
+    },
+    "Reverb": {
+      "canonical": "Reverb",
+      "aliases": ["Ableton Reverb", "verb", "rev"],
+      "learned_aliases": []
+    },
+    "Delay": {
+      "canonical": "Delay",
+      "aliases": ["Ableton Delay", "Simple Delay", "dly"],
+      "learned_aliases": []
+    },
+    "Echo": {
+      "canonical": "Echo",
+      "aliases": ["Ableton Echo", "Ping Pong", "Ping Pong Delay"],
+      "learned_aliases": []
+    },
+    "Chorus-Ensemble": {
+      "canonical": "Chorus-Ensemble",
+      "aliases": ["Ableton Chorus", "Chorus", "Ensemble"],
+      "learned_aliases": []
+    },
+    "Phaser": {
+      "canonical": "Phaser",
+      "aliases": ["Ableton Phaser", "phase"],
+      "learned_aliases": []
+    },
+    "Flanger": {
+      "canonical": "Flanger",
+      "aliases": ["Ableton Flanger", "flange"],
+      "learned_aliases": []
+    },
+    "Auto Filter": {
+      "canonical": "Auto Filter",
+      "aliases": ["Filter", "Ableton Filter", "AutoFilter", "auto-filter"],
+      "learned_aliases": []
+    },
+    "Auto Pan": {
+      "canonical": "Auto Pan",
+      "aliases": ["Tremolo", "Panner", "AutoPan", "auto-pan"],
+      "learned_aliases": []
+    },
+    "Utility": {
+      "canonical": "Utility",
+      "aliases": ["Gain", "Phase", "Width", "util"],
+      "learned_aliases": []
+    },
+    "Spectrum": {
+      "canonical": "Spectrum",
+      "aliases": ["Analyzer", "Spectrum Analyzer", "analyser"],
+      "learned_aliases": []
+    },
+    "Tuner": {
+      "canonical": "Tuner",
+      "aliases": ["Ableton Tuner", "tune"],
+      "learned_aliases": []
+    },
+    "Gate": {
+      "canonical": "Gate",
+      "aliases": ["Noise Gate", "Ableton Gate"],
+      "learned_aliases": []
+    },
+    "Erosion": {
+      "canonical": "Erosion",
+      "aliases": ["Ableton Erosion", "erode"],
+      "learned_aliases": []
+    },
+    "Redux": {
+      "canonical": "Redux",
+      "aliases": ["Bit Crusher", "Bitcrusher", "Lo-Fi"],
+      "learned_aliases": []
+    },
+    "Vinyl Distortion": {
+      "canonical": "Vinyl Distortion",
+      "aliases": ["Vinyl", "Lo-Fi Vinyl"],
+      "learned_aliases": []
+    },
+    "Amp": {
+      "canonical": "Amp",
+      "aliases": ["Guitar Amp", "Ableton Amp"],
+      "learned_aliases": []
+    },
+    "Cabinet": {
+      "canonical": "Cabinet",
+      "aliases": ["Cab", "Speaker Cab", "Guitar Cabinet"],
+      "learned_aliases": []
+    },
+    "Corpus": {
+      "canonical": "Corpus",
+      "aliases": ["Resonator", "Body Resonance"],
+      "learned_aliases": []
+    },
+    "Vocoder": {
+      "canonical": "Vocoder",
+      "aliases": ["Ableton Vocoder", "vocod"],
+      "learned_aliases": []
+    },
+    "Frequency Shifter": {
+      "canonical": "Frequency Shifter",
+      "aliases": ["Freq Shifter", "FreqShift"],
+      "learned_aliases": []
+    },
+    "Grain Delay": {
+      "canonical": "Grain Delay",
+      "aliases": ["Granular Delay", "Granular"],
+      "learned_aliases": []
+    },
+    "Beat Repeat": {
+      "canonical": "Beat Repeat",
+      "aliases": ["Stutter", "Beat Stutter", "Repeat"],
+      "learned_aliases": []
+    },
+    "Looper": {
+      "canonical": "Looper",
+      "aliases": ["Loop Pedal", "Ableton Looper"],
+      "learned_aliases": []
+    },
+    "External Audio Effect": {
+      "canonical": "External Audio Effect",
+      "aliases": ["External FX", "Hardware Insert", "External Insert"],
+      "learned_aliases": []
+    },
+
+    "FabFilter Pro-Q 3": {
+      "canonical": "FabFilter Pro-Q 3",
+      "aliases": ["Pro-Q", "Pro Q", "ProQ", "Pro-Q 3", "FabFilter EQ", "ProQ3", "Pro Q 3", "FabFilter Pro-Q"],
+      "learned_aliases": []
+    },
+    "FabFilter Pro-C 2": {
+      "canonical": "FabFilter Pro-C 2",
+      "aliases": ["Pro-C", "Pro C", "ProC", "Pro-C 2", "FabFilter Compressor", "ProC2", "Pro C 2", "FabFilter Pro-C"],
+      "learned_aliases": []
+    },
+    "FabFilter Pro-R": {
+      "canonical": "FabFilter Pro-R",
+      "aliases": ["Pro-R", "ProR", "FabFilter Reverb"],
+      "learned_aliases": []
+    },
+    "FabFilter Pro-L 2": {
+      "canonical": "FabFilter Pro-L 2",
+      "aliases": ["Pro-L", "ProL", "FabFilter Limiter", "ProL2", "Pro L 2", "FabFilter Pro-L"],
+      "learned_aliases": []
+    },
+    "FabFilter Saturn 2": {
+      "canonical": "FabFilter Saturn 2",
+      "aliases": ["Saturn", "FabFilter Saturation", "Saturn2"],
+      "learned_aliases": []
+    },
+    "FabFilter Pro-MB": {
+      "canonical": "FabFilter Pro-MB",
+      "aliases": ["Pro-MB", "ProMB", "FabFilter Multiband"],
+      "learned_aliases": []
+    },
+    "FabFilter Pro-DS": {
+      "canonical": "FabFilter Pro-DS",
+      "aliases": ["Pro-DS", "ProDS", "FabFilter De-Esser"],
+      "learned_aliases": []
+    },
+
+    "SSL E-Channel": {
+      "canonical": "SSL E-Channel",
+      "aliases": ["SSL Channel", "Waves SSL", "SSL E Channel", "E-Channel"],
+      "learned_aliases": []
+    },
+    "SSL G-Master Buss Compressor": {
+      "canonical": "SSL G-Master Buss Compressor",
+      "aliases": ["SSL Bus Comp", "SSL Buss", "G-Master", "SSL Bus Compressor"],
+      "learned_aliases": []
+    },
+    "CLA-2A": {
+      "canonical": "CLA-2A",
+      "aliases": ["LA-2A", "CLA2A", "LA2A", "Teletronix"],
+      "learned_aliases": []
+    },
+    "CLA-76": {
+      "canonical": "CLA-76",
+      "aliases": ["1176", "CLA76", "Eleven76"],
+      "learned_aliases": []
+    },
+    "API 2500": {
+      "canonical": "API 2500",
+      "aliases": ["API Compressor", "API 2500 Compressor"],
+      "learned_aliases": []
+    },
+    "PuigTec EQP-1A": {
+      "canonical": "PuigTec EQP-1A",
+      "aliases": ["Pultec", "PuigTec", "EQP-1A", "Pultec EQ"],
+      "learned_aliases": []
+    },
+    "H-Reverb": {
+      "canonical": "H-Reverb",
+      "aliases": ["Waves Reverb", "H Reverb", "HReverb"],
+      "learned_aliases": []
+    },
+    "R-Verb": {
+      "canonical": "R-Verb",
+      "aliases": ["Waves Reverb", "R Verb", "RVerb"],
+      "learned_aliases": []
+    },
+    "Waves Tune": {
+      "canonical": "Waves Tune",
+      "aliases": ["Pitch Correction", "Auto-Tune", "Waves Autotune"],
+      "learned_aliases": []
+    },
+
+    "Decapitator": {
+      "canonical": "Decapitator",
+      "aliases": ["Soundtoys Saturation", "Soundtoys Decap", "Decap"],
+      "learned_aliases": []
+    },
+    "EchoBoy": {
+      "canonical": "EchoBoy",
+      "aliases": ["Soundtoys Delay", "Echo Boy", "Soundtoys EchoBoy"],
+      "learned_aliases": []
+    },
+    "Little Plate": {
+      "canonical": "Little Plate",
+      "aliases": ["Soundtoys Reverb", "Plate Reverb", "Soundtoys Little Plate"],
+      "learned_aliases": []
+    },
+    "Radiator": {
+      "canonical": "Radiator",
+      "aliases": ["Soundtoys Warming", "Soundtoys Radiator"],
+      "learned_aliases": []
+    },
+    "Devil-Loc": {
+      "canonical": "Devil-Loc",
+      "aliases": ["Soundtoys Crusher", "Devil Loc", "DevilLoc"],
+      "learned_aliases": []
+    },
+    "Little AlterBoy": {
+      "canonical": "Little AlterBoy",
+      "aliases": ["AlterBoy", "Alter Boy", "Soundtoys Pitch"],
+      "learned_aliases": []
+    },
+
+    "Ozone": {
+      "canonical": "Ozone",
+      "aliases": ["iZotope Mastering", "iZotope Ozone"],
+      "learned_aliases": []
+    },
+    "Neutron": {
+      "canonical": "Neutron",
+      "aliases": ["iZotope Mixing", "iZotope Neutron"],
+      "learned_aliases": []
+    },
+    "RX": {
+      "canonical": "RX",
+      "aliases": ["iZotope Repair", "iZotope RX"],
+      "learned_aliases": []
+    },
+    "Nectar": {
+      "canonical": "Nectar",
+      "aliases": ["iZotope Vocal", "iZotope Nectar"],
+      "learned_aliases": []
+    },
+
+    "Neve 1073": {
+      "canonical": "Neve 1073",
+      "aliases": ["1073", "UAD Neve", "UA 1073"],
+      "learned_aliases": []
+    },
+    "Neve 88RS": {
+      "canonical": "Neve 88RS",
+      "aliases": ["UAD Channel Strip", "88RS"],
+      "learned_aliases": []
+    },
+    "LA-2A": {
+      "canonical": "LA-2A",
+      "aliases": ["Teletronix", "UAD LA-2A", "LA2A"],
+      "learned_aliases": []
+    },
+    "1176": {
+      "canonical": "1176",
+      "aliases": ["UAD 1176", "Eleven76", "UA 1176"],
+      "learned_aliases": []
+    },
+    "Pultec EQP-1A": {
+      "canonical": "Pultec EQP-1A",
+      "aliases": ["UAD Pultec", "Pultec"],
+      "learned_aliases": []
+    },
+
+    "De-Esser": {
+      "canonical": "De-Esser",
+      "aliases": ["DeEsser", "Sibilance Control", "deesser", "de esser"],
+      "learned_aliases": []
+    },
+    "Soothe2": {
+      "canonical": "Soothe2",
+      "aliases": ["Soothe", "Resonance Suppressor", "Soothe 2"],
+      "learned_aliases": []
+    },
+    "Spiff": {
+      "canonical": "Spiff",
+      "aliases": ["Transient Designer", "oeksound Spiff"],
+      "learned_aliases": []
+    },
+
+    "Vocal Rider": {
+      "canonical": "Vocal Rider",
+      "aliases": ["Auto Gain", "Volume Rider", "Waves Vocal Rider"],
+      "learned_aliases": []
+    },
+    "Auto-Tune": {
+      "canonical": "Auto-Tune",
+      "aliases": ["Antares", "Pitch Correction", "Autotune", "Auto Tune"],
+      "learned_aliases": []
+    },
+    "Melodyne": {
+      "canonical": "Melodyne",
+      "aliases": ["Pitch Editing", "Celemony Melodyne", "DNA Editing"],
+      "learned_aliases": []
+    },
+
+    "OTT": {
+      "canonical": "OTT",
+      "aliases": ["Over The Top", "Xfer OTT", "Ableton OTT"],
+      "learned_aliases": []
+    },
+    "Serum": {
+      "canonical": "Serum",
+      "aliases": ["Xfer Serum", "Serum FX"],
+      "learned_aliases": []
+    },
+    "Serum FX": {
+      "canonical": "Serum FX",
+      "aliases": ["Serum Effects", "Xfer Serum FX"],
+      "learned_aliases": []
+    },
+    "Diva": {
+      "canonical": "Diva",
+      "aliases": ["U-he Diva", "u-he Diva"],
+      "learned_aliases": []
+    },
+    "Valhalla VintageVerb": {
+      "canonical": "Valhalla VintageVerb",
+      "aliases": ["VintageVerb", "Valhalla Reverb", "Vintage Verb"],
+      "learned_aliases": []
+    },
+    "Valhalla Room": {
+      "canonical": "Valhalla Room",
+      "aliases": ["ValhallaRoom", "Valhalla"],
+      "learned_aliases": []
+    },
+    "RC-20": {
+      "canonical": "RC-20",
+      "aliases": ["Retro Color", "RC20", "RC 20", "XLN RC-20"],
+      "learned_aliases": []
+    }
+  }
+}

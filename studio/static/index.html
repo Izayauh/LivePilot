@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live Pilot</title>
+<link rel="icon" href="/static/icon.png">
+<style>
+:root{--bg:#141517;--panel:#1b1d20;--line:#2a2d31;--text:#e8e6e1;--muted:#8d8f93;--accent:#e0a33a;--ok:#4cb782;--bad:#e5604f;--you:#23272c;--think:#7f9cf5}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font:14px/1.45 "Segoe UI",system-ui,sans-serif}
+body{display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--line);background:var(--panel)}
+.brand{font-weight:600;letter-spacing:.2px}
+.pill{display:flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:#25282c;font-size:13px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.listening .dot{background:var(--ok)} .hearing .dot{background:var(--ok);animation:pulse .6s infinite alternate}
+.transcribing .dot,.thinking .dot{background:var(--think);animation:pulse .5s infinite alternate}
+.muted .dot,.error .dot{background:var(--bad)} .starting .dot{background:var(--accent);animation:pulse .8s infinite alternate}
+@keyframes pulse{to{opacity:.3}}
+.live{color:var(--muted);font-size:13px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.live b{color:var(--text);font-weight:500}
+button{background:#2a2d31;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:4px 10px;font:inherit;cursor:pointer}
+button.off{background:#3a1f1c;border-color:#5a2a24;color:#f2b8ae}
+main{flex:1;display:flex;min-height:0}
+#chat{flex:1.7;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+#log{flex:1;overflow-y:auto;border-left:1px solid var(--line);padding:10px 12px;font-size:12.5px;background:#17191b}
+#log h2{margin:0 0 8px;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.row{display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #222528}
+.row .ms{color:var(--muted);margin-left:auto;white-space:nowrap}
+.row .nm{color:var(--accent);white-space:nowrap}
+.row.bad .nm{color:var(--bad)}
+.you{align-self:flex-end;max-width:80%;background:var(--you);padding:7px 11px;border-radius:10px 10px 2px 10px}
+.you small{color:var(--muted);margin-right:6px}
+.lp{align-self:flex-start;max-width:88%}
+.lp .text{padding:2px 0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.chip{font-size:12.5px;padding:3px 8px;border-radius:6px;background:#1f2a23;border:1px solid #2c4636}
+.chip.pending{background:#232634;border-color:#363c55;color:#b8c3f7}
+.chip.bad{background:#2d1d1b;border-color:#5a2a24}
+.chip .ms{color:var(--muted);margin-left:6px}
+.timing{font-size:12px;color:var(--muted)}
+.ignored{opacity:.4;font-size:12.5px}
+.empty{color:var(--muted);margin:auto;text-align:center;max-width:420px}
+footer{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--line);background:var(--panel)}
+footer input{flex:1;background:#121315;border:1px solid var(--line);border-radius:6px;color:var(--text);padding:7px 10px;font:inherit}
+#toast{position:fixed;top:52px;right:16px;background:#1f2a23;border:1px solid var(--ok);border-radius:8px;padding:8px 12px;max-width:380px;opacity:0;transform:translateY(-6px);transition:all .2s;pointer-events:none}
+#toast.show{opacity:1;transform:none}
+#toast.bad{background:#2d1d1b;border-color:var(--bad)}
+
+.ask{align-self:flex-start;max-width:88%;background:#2a2416;border:1px solid #5a4a26;border-radius:8px;padding:8px 11px}
+.ask .btns{display:flex;gap:6px;margin-top:6px}
+.ask .btns button:first-child{border-color:var(--accent);color:var(--accent)}
+.ask .done{color:var(--muted);font-size:12.5px;margin-top:4px}
+.since{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:10px 12px;align-self:stretch;max-width:640px;width:100%;flex:none;animation:sinceIn .2s ease-out}
+@keyframes sinceIn{from{opacity:0;transform:translateY(-4px)}}
+.since-head{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.since-head b{font-weight:600;text-transform:uppercase;letter-spacing:.6px}
+.since-item{padding:8px 0;border-top:1px solid #222528;overflow:hidden;max-height:200px;transition:opacity .18s,max-height .18s,padding .18s}
+.since-head + .since-item{border-top:0}
+.since-item.gone,.since.gone{opacity:0;max-height:0;padding-top:0;padding-bottom:0}
+.since{transition:opacity .18s,max-height .18s,padding .18s;max-height:600px;overflow:hidden}
+.since-item .h{font-size:14px;font-weight:500;color:var(--text)}
+.since-item .m{font-size:12.5px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.since-item .t{font-size:12px;color:var(--muted)}
+.since-item .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.since-item .btns .say{border-color:var(--accent);color:var(--accent)}
+.setup{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--bad);border-radius:8px;padding:10px 12px;align-self:stretch;max-width:640px;width:100%;flex:none}
+.setup .since-head b{color:var(--bad)}
+.setup-item{padding:8px 0;border-top:1px solid #222528}
+.since-head + .setup-item{border-top:0}
+.setup-item .h{font-size:14px;font-weight:500}
+.setup-item .d{font-size:12.5px;color:var(--muted)}
+.setup-item .f{font-size:13px;margin-top:3px}
+.setup .btns{display:flex;gap:6px;margin-top:8px}
+@media (max-width:760px){#log{display:none}.since{max-width:none}}
+</style>
+</head>
+<body>
+<header>
+  <span class="brand">Live Pilot</span>
+  <span id="pill" class="pill starting"><span class="dot"></span><span id="state">Starting</span></span>
+  <span id="live" class="live">Connecting to Ableton...</span>
+  <button id="mic" title="Turn the mic on or off">Mic on</button>
+</header>
+<main>
+  <section id="chat"><div class="empty" id="empty">Talk when the light is green. Every change shows up here and in the log, with how long it took.</div></section>
+  <aside id="log"><h2>What it did</h2></aside>
+</main>
+<footer><input id="say" placeholder="Or type here and press Enter" autocomplete="off"></footer>
+<div id="toast"></div>
+<script>
+const WORDS = {starting: "Starting", listening: "Listening", hearing: "Hearing you", transcribing: "Writing it down",
+  thinking: "Working", ready: "Ready", muted: "Mic off", error: "Error"};
+const $ = id => document.getElementById(id);
+let ws, muted = false, turnEl = null, pending = {}, toastTimer;
+
+function esc(s) { return String(s).replace(/[&<>]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c])); }
+function scroll(el) { el.scrollTop = el.scrollHeight; }
+function setState(s) { $("pill").className = "pill " + s; $("state").textContent = WORDS[s] || s; }
+function setMuted(m) { muted = m; $("mic").textContent = m ? "Mic off" : "Mic on"; $("mic").classList.toggle("off", m); }
+
+function newTurn(text, typed) {
+  $("empty")?.remove();
+  const you = document.createElement("div");
+  you.className = "you";
+  you.innerHTML = `<small>${typed ? "typed" : "said"}</small>${esc(text)}`;
+  $("chat").append(you);
+  turnEl = document.createElement("div");
+  turnEl.className = "lp";
+  turnEl.innerHTML = `<div class="chips"></div><div class="text"></div><div class="timing"></div>`;
+  $("chat").append(turnEl);
+  scroll($("chat"));
+}
+
+function argText(a) {
+  return Object.entries(a || {}).map(([k, v]) => `${k}=${typeof v === "object" ? JSON.stringify(v) : v}`).join(" ");
+}
+
+function toast(text, ok, plain) {
+  const t = $("toast");
+  t.textContent = plain ? text : (ok ? "Done: " : "Failed: ") + text;
+  t.className = "show" + (ok ? "" : " bad");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className = "", plain ? 8000 : 2600);  // fix reports need reading time
+}
+
+const READS = new Set(["session", "list_commands"]);
+const CHOICES = {fix: "Fixing it now", later: "In tonight's report", never: "Won't ask again", closed: "Timed out, in tonight's report"};
+
+function ask(id, text) {
+  if (document.getElementById("ask-" + id)) return;
+  $("empty")?.remove();
+  const card = document.createElement("div");
+  card.className = "ask"; card.id = "ask-" + id;
+  card.innerHTML = `<div>${esc(text)}</div><div class="btns"><button data-c="fix">Fix it now</button>`
+    + `<button data-c="later">Later</button><button data-c="never">Never</button></div>`;
+  card.querySelectorAll("button").forEach(b => b.onclick = () => ws?.send(JSON.stringify({type: "answer", id, choice: b.dataset.c})));
+  $("chat").append(card);
+  scroll($("chat"));
+}
+
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function whenText(ts) {
+  const d = new Date(ts * 1000), now = new Date();
+  const day0 = x => new Date(x.getFullYear(), x.getMonth(), x.getDate());
+  const ago = Math.round((day0(now) - day0(d)) / 86400000);
+  const clock = d.toLocaleTimeString("en-US", {hour: "numeric", minute: "2-digit"});
+  return (ago <= 0 ? "today" : ago === 1 ? "yesterday" : DAYS[d.getDay()]) + " " + clock;
+}
+
+function collapse(el, then) {
+  el.style.maxHeight = el.offsetHeight + "px";
+  void el.offsetHeight;
+  el.classList.add("gone");
+  setTimeout(() => { el.remove(); then?.(); }, 190);
+}
+
+function sinceCount() {
+  const left = document.querySelectorAll("#since .since-item:not(.gone)").length;
+  const n = document.querySelector("#since .n");
+  if (n) n.textContent = left === 1 ? "1 change" : left + " changes";
+  return left;
+}
+
+function sinceDone(id, itemEl) {
+  ws.send(JSON.stringify({type: "since_seen", id}));
+  collapse(itemEl);
+  if (sinceCount() === 0) collapse($("since"));
+}
+
+function showSince(items) {
+  $("since")?.remove();
+  if (!items.length) return;
+  const card = document.createElement("div");
+  card.className = "since"; card.id = "since";
+  card.innerHTML = `<div class="since-head"><b>While you were away</b><span class="n"></span></div>`;
+  for (const it of items) {
+    const row = document.createElement("div");
+    row.className = "since-item";
+    row.innerHTML = `<div class="h">${esc(it.head)}</div>` + (it.more ? `<div class="m">${esc(it.more)}</div>` : "")
+      + `<div class="t">${it.kind === "studio" ? "Studio update" : "From your phone"} · ${whenText(it.ts)}</div>`
+      + `<div class="btns">${it.say ? '<button class="say"></button>' : ""}<button class="got">Got it</button></div>`;
+    if (it.say) {
+      const b = row.querySelector(".say");
+      b.textContent = `Say "${it.say}"`;
+      b.onclick = () => {
+        if (ws?.readyState !== 1) return;
+        ws.send(JSON.stringify({type: "say", text: it.say}));
+        sinceDone(it.id, row);
+      };
+    }
+    row.querySelector(".got").onclick = () => { if (ws?.readyState === 1) sinceDone(it.id, row); };
+    card.append(row);
+  }
+  $("chat").prepend(card);
+  sinceCount();
+}
+
+function showSetup(items) {
+  $("setup")?.remove();
+  if (!items.length) return;
+  $("empty")?.remove();
+  const card = document.createElement("div");
+  card.className = "setup"; card.id = "setup";
+  card.innerHTML = `<div class="since-head"><b>Before we start</b><span>${items.length} thing${items.length > 1 ? "s" : ""} to fix</span></div>`
+    + items.map(it => `<div class="setup-item"><div class="h">${esc(it.title)}</div><div class="d">${esc(it.detail)}</div><div class="f">${esc(it.fix)}</div></div>`).join("")
+    + `<div class="btns"><button id="recheck">Check again</button></div>`;
+  card.querySelector("#recheck").onclick = () => ws?.send(JSON.stringify({type: "recheck"}));
+  $("chat").prepend(card);
+}
+
+function onEvent(e) {
+  switch (e.type) {
+    case "setup": showSetup(e.items || []); break;
+    case "since": showSince(e.items || []); break;
+    case "hello": setState(e.state); setMuted(e.muted); if (e.version) document.querySelector(".brand").title = "Live Pilot Studio " + e.version; break;
+    case "state": setState(e.state); if ("muted" in e) setMuted(e.muted); break;
+    case "heard": newTurn(e.text, e.typed); break;
+    case "live":
+      $("live").innerHTML = e.ok ? `<b>${e.tempo} BPM</b> · ${e.playing ? "playing" : "stopped"} · bar <b>${e.bar}</b>`
+                                 : `<b>Ableton not answering.</b> ${esc(e.fix || "")}`;
+      $("live").title = e.ok ? "" : (e.summary || "");  // the technical reason, on hover
+      break;
+    case "tool_start": {
+      if (!turnEl) newTurn("(started on its own)", true);
+      const chip = document.createElement("span");
+      chip.className = "chip pending";
+      chip.textContent = `${e.name} ${argText(e.args)}`;
+      turnEl.querySelector(".chips").append(chip);
+      (pending[e.name] ||= []).push(chip);
+      scroll($("chat"));
+      break;
+    }
+    case "tool_end": {
+      const chip = (pending[e.name] || []).shift();
+      if (chip) {
+        chip.className = "chip" + (e.ok ? "" : " bad");
+        chip.innerHTML = `${e.ok ? "✓" : "✗"} ${esc(e.summary)}<span class="ms">${e.ms} ms</span>`;
+      }
+      const row = document.createElement("div");
+      row.className = "row" + (e.ok ? "" : " bad");
+      row.innerHTML = `<span class="nm">${esc(e.name)}</span><span>${esc(e.summary)}</span><span class="ms">${e.ms} ms</span>`;
+      row.title = argText(e.args);
+      $("log").append(row);
+      scroll($("log"));
+      if (!READS.has(e.name)) toast(e.summary, e.ok);
+      break;
+    }
+    case "say": {
+      if (!turnEl) newTurn("(system)", true);
+      if (e.text.trim() === "(ignored)") {
+        turnEl.previousElementSibling.classList.add("ignored");
+        turnEl.classList.add("ignored");
+        turnEl.querySelector(".text").textContent = "Not for me, so I left it alone.";
+        break;
+      }
+      const t = turnEl.querySelector(".text");
+      t.textContent = (t.textContent ? t.textContent + " " : "") + e.text;
+      scroll($("chat"));
+      break;
+    }
+    case "ask": ask(e.id, e.text); break;
+    case "answered": {
+      const card = document.getElementById("ask-" + e.id);
+      const from = e.via === "phone" ? " (answered on your phone)" : "";
+      if (card) card.querySelector(".btns").outerHTML = `<div class="done">${CHOICES[e.choice] || e.choice}${from}</div>`;
+      break;
+    }
+    case "note": toast(e.text, e.ok, true); break;
+    case "turn": {
+      if (!turnEl) break;
+      const parts = [];
+      if (e.heard_s != null) parts.push(`heard ${e.heard_s}s`);
+      if (e.landed_s != null) parts.push(`landed ${e.landed_s}s`);
+      if (e.total_s != null) parts.push(`done ${e.total_s}s`);
+      turnEl.querySelector(".timing").textContent = parts.join(" · ");
+      turnEl = null; pending = {};
+      break;
+    }
+  }
+}
+
+function connect() {
+  ws = new WebSocket(`ws://${location.host}/ws`);
+  ws.onopen = sendFocus;
+  ws.onmessage = m => onEvent(JSON.parse(m.data));
+  ws.onclose = () => { setState("starting"); $("state").textContent = "Reconnecting"; setTimeout(connect, 1000); };
+}
+
+$("say").addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.value.trim() && ws?.readyState === 1) {
+    ws.send(JSON.stringify({type: "say", text: e.target.value.trim()}));
+    e.target.value = "";
+  }
+});
+// Studio toasts a question only when this window isn't in front.
+function sendFocus() { if (ws?.readyState === 1) ws.send(JSON.stringify({type: "focus", focused: document.hasFocus()})); }
+addEventListener("focus", sendFocus); addEventListener("blur", sendFocus); document.addEventListener("visibilitychange", sendFocus);
+$("mic").onclick = () => ws?.send(JSON.stringify({type: "mute", muted: !muted}));
+connect();
+</script>
+</body>
+</html>

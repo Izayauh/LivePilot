@@ -1,0 +1,17 @@
+{
+  "schema": "livepilot-plugin-recipe-v1",
+  "name": "vox_present_3_supercharger",
+  "plugin_name": "",
+  "device_class": "",
+  "params": {
+    "Device On": 1.0,
+    "Input Trim": 0.5,
+    "Sidechain": 0.0,
+    "Compress": 0.30000001192092896,
+    "Punch": 0.3499999940395355,
+    "Dirt": 0.15000000596046448,
+    "Mix": 1.0,
+    "Output": 0.5
+  },
+  "notes": "Lead vocal chain 3/5: tube glue, light dirt"
+}

@@ -1,0 +1,77 @@
+# Exact versions Live Pilot Studio is tested with, for everything requirements-studio.txt pulls in.
+# install.ps1 installs with: pip install -r requirements-studio.txt -c constraints.txt
+# The code leans on package internals (the anyio.open_process patch in studio/brain.py, onnx_asr's
+# private _model in studio/ears.py, claude_agent_sdk's _bundled/claude.exe in install.ps1), so a
+# newer version is only safe after the tests and a real session pass on it.
+#
+# To refresh, in a working checkout:
+#   1. venv\Scripts\python.exe -m pip install --upgrade -r requirements-studio.txt
+#   2. Run the tests (venv\Scripts\python.exe -m pytest tests -q) and use Studio for a session.
+#   3. Write the installed versions of the dependency closure back here: run
+#      venv\Scripts\python.exe -m pip install --dry-run --ignore-installed --quiet --report - -r requirements-studio.txt
+#      and keep one name==version line per package it lists, taking each version from
+#      venv\Scripts\python.exe -m pip freeze (not from the report, which shows the newest).
+aiohappyeyeballs==2.7.1
+aiohttp==3.14.5
+aiosignal==1.4.0
+annotated-types==0.7.0
+anyio==4.12.0
+attrs==26.1.0
+certifi==2025.11.12
+cffi==2.0.0
+charset-normalizer==3.4.4
+claude-agent-sdk==0.2.168
+click==8.5.0
+colorama==0.4.6
+cryptography==50.0.2
+filelock==3.32.3
+flatbuffers==25.12.19
+frozenlist==1.8.0
+fsspec==2026.7.0
+h11==0.16.0
+httpcore2==2.15.1
+httpx2==2.15.1
+huggingface-hub==0.36.2
+idna==3.20
+jsonschema==4.26.0
+jsonschema-specifications==2025.9.1
+mcp==2.3.0
+mcp-types==2.3.0
+multidict==7.1.0
+numpy==2.4.1
+onnx-asr==0.12.0
+onnxruntime==1.31.0
+opentelemetry-api==1.45.1
+packaging==26.0
+pillow==12.1.0
+propcache==0.5.4
+protobuf==5.29.5
+psutil==7.2.2
+pycparser==3.0
+pydantic==2.12.5
+pydantic-core==2.41.5
+pyjwt==2.15.1
+python-multipart==0.0.32
+pywin32==311
+pyyaml==6.0.3
+referencing==0.37.0
+requests==2.32.5
+rpds-py==2026.9.1
+sniffio==1.3.1
+sounddevice==0.5.5
+sse-starlette==3.5.0
+starlette==1.9.0
+tqdm==4.67.1
+truststore==0.10.5
+typing-extensions==4.15.0
+typing-inspection==0.4.2
+urllib3==2.6.2
+uvicorn==0.54.0
+winrt-runtime==3.2.1
+winrt-windows-foundation==3.2.1
+winrt-windows-foundation-collections==3.2.1
+winrt-windows-globalization==3.2.1
+winrt-windows-graphics-imaging==3.2.1
+winrt-windows-media-ocr==3.2.1
+winrt-windows-storage-streams==3.2.1
+yarl==1.25.1

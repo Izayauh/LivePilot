@@ -1,0 +1,30 @@
+{
+  "rules": [
+    {
+      "name": "save-before-closing",
+      "match": [
+        "save changes to",
+        "before closing"
+      ],
+      "press": "Yes",
+      "why": "Never lose work on quit. Verified 2026-10-14: Yes saves the set and Live exits."
+    },
+    {
+      "name": "uad-no-hardware",
+      "match": [
+        "UAD plug-ins are disabled"
+      ],
+      "press": "OK",
+      "why": "No UAD hardware on this PC; the notice blocks Live startup until OK. Seen 2026-10-14."
+    },
+    {
+      "name": "recover-after-crash",
+      "match": [
+        "unexpectedly quit",
+        "recover your work"
+      ],
+      "press": "enter",
+      "why": "Live asks this on the first launch after a crash. Enter presses the default, Yes: recover, so no work is thrown away unattended. By key, not label, because OCR misses the highlighted Yes (it read only No, 2026-10-22)."
+    }
+  ]
+}

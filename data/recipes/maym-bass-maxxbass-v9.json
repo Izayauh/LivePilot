@@ -1,0 +1,19 @@
+{
+  "schema": "livepilot-plugin-recipe-v1",
+  "name": "maym-bass-maxxbass-v9",
+  "plugin_name": "",
+  "device_class": "",
+  "params": {
+    "Device On": 1.0,
+    "Input gain": 1.0,
+    "Orig Bass gain": 0.6670000553131104,
+    "Ratio": 0.6670000553131104,
+    "Harmonics gain": 0.6670000553131104,
+    "Harmonics Decay": 0.0,
+    "Response": 0.3499999940395355,
+    "Monitor": 0.3499999940395355,
+    "Highpass": 0.6000000238418579,
+    "Frequency": 0.6000000238418579
+  },
+  "notes": "MaxxBass for the MAYM bass match. Harmonics gain raw 0.35 (approx -12dB). Default is -inf which produces a lifeless pure sub - that default was the original cause of the too-dark tone. Bypass-tested: not the source of dynamic-range limiting."
+}

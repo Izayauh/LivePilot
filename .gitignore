@@ -1,0 +1,54 @@
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+client_secret_*.json
+
+# Runtime/state artifacts
+logs/
+screenshots/
+daily_beats/
+scratch/
+stems/
+*.vtt
+config/vst_cache.json
+config/tool_registry.json
+config/macros.json
+config/reference_library.json
+data/project_intent.json
+data/*
+!data/recipes/
+!data/recipes/**
+!data/chains/
+!data/chains/**
+!data/chain_preferences/
+!data/chain_preferences/**
+!data/live_dialog_rules.json
+
+# OS/editor artifacts
+.DS_Store
+Thumbs.db
+nul
+
+# Diagnostic and temporary files
+wsl_diag.txt
+test_output.txt
+calibration_log.txt
+
+# Codex Cloud task clones — never check these in
+live-pilot-*/
+
+# Personal working material and release builds: never part of the product
+.scratch/
+work/
+dist/
+answered_guide_from_google_docs.txt
+human_audit_questions.txt

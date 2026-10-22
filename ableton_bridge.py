@@ -1,0 +1,1038 @@
+#!/usr/bin/env python3
+"""
+Ableton Bridge CLI — standalone command-line wrapper around Ableton OSC controls.
+
+Used by OpenClaw agents (via the ``exec`` tool) to control Ableton Live
+without importing Gemini or any LLM library.
+
+Usage:
+    python ableton_bridge.py <function_name> '<json_args>'
+    python ableton_bridge.py --list            # list all available functions
+
+Examples:
+    python ableton_bridge.py get_track_list '{}'
+    python ableton_bridge.py mute_track '{"track_index":0,"muted":1}'
+    python ableton_bridge.py set_tempo '{"bpm":120}'
+    python ableton_bridge.py get_mixer_snapshot '{}'
+    python ableton_bridge.py add_plugin_to_track '{"track_index":0,"plugin_name":"EQ Eight"}'
+
+All output is JSON on stdout.  Exit code 0 on success, 1 on error.
+"""
+
+import json
+import os
+import sys
+
+# ---------------------------------------------------------------------------
+# Ensure repo root is on sys.path so ``ableton_controls`` can be imported
+# regardless of the caller's working directory.
+# ---------------------------------------------------------------------------
+_REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
+# ``discovery`` moved under legacy/ in the reorg; controller.py still imports
+# it top-level, so keep legacy/ importable.
+_LEGACY_ROOT = os.path.join(_REPO_ROOT, "legacy")
+if _LEGACY_ROOT not in sys.path:
+    sys.path.insert(0, _LEGACY_ROOT)
+
+from livepilot_tools import remote_script  # stdlib-only TCP client, port 9878
+
+try:
+    from ableton_controls import ableton  # module-level singleton (one listener on 11001)
+    from ableton_controls.reliable_params import ReliableParameterController
+    from livepilot_tools.context_tools import (
+        analyze_clip_context as _analyze_clip_context,
+        analyze_rhythm_context as _analyze_rhythm_context,
+        get_creative_context as _get_creative_context,
+        get_project_intent as _get_project_intent,
+        plan_arrangement_move as _plan_arrangement_move,
+        set_project_intent as _set_project_intent,
+    )
+    from livepilot_tools.plugin_recipes import (
+        apply_plugin_recipe as _apply_plugin_recipe,
+        list_plugin_recipes as _list_plugin_recipes,
+        save_plugin_recipe as _save_plugin_recipe,
+    )
+    _ABLETON_IMPORT_ERROR = None
+except Exception as _import_exc:  # pragma: no cover - exercised in lightweight test envs
+    _ABLETON_IMPORT_ERROR = str(_import_exc)
+
+    class _FallbackAbleton:
+        """Minimal fallback used when ableton_controls deps are unavailable.
+
+        Keeps CLI introspection (--list) and error handling working in environments
+        that don't have full OSC/runtime deps installed.
+        """
+
+        def __getattr__(self, _name):
+            def _missing(*_args, **_kwargs):
+                return {
+                    "success": False,
+                    "message": (
+                        "Ableton runtime dependency unavailable: "
+                        f"{_ABLETON_IMPORT_ERROR}"
+                    ),
+                }
+
+            return _missing
+
+    class ReliableParameterController:  # type: ignore[override]
+        def __init__(self, _ableton_obj):
+            self._error = _ABLETON_IMPORT_ERROR
+
+        def set_parameter_verified(self, *_args, **_kwargs):
+            return {"success": False, "message": f"Ableton runtime dependency unavailable: {self._error}"}
+
+        def set_parameter_by_name(self, *_args, **_kwargs):
+            return {"success": False, "message": f"Ableton runtime dependency unavailable: {self._error}"}
+
+        def set_parameters_by_name(self, *_args, **_kwargs):
+            return {
+                "success": False,
+                "total": 0,
+                "succeeded": 0,
+                "failed": 0,
+                "not_found": 0,
+                "details": [],
+                "message": f"Ableton runtime dependency unavailable: {self._error}",
+            }
+
+    ableton = _FallbackAbleton()
+
+    def _get_creative_context(**kwargs):  # type: ignore[no-redef]
+        from livepilot_tools.context_tools import get_creative_context
+        return get_creative_context(**kwargs)
+
+    def _analyze_clip_context(**kwargs):  # type: ignore[no-redef]
+        from livepilot_tools.context_tools import analyze_clip_context
+        return analyze_clip_context(**kwargs)
+
+    def _analyze_rhythm_context(**kwargs):  # type: ignore[no-redef]
+        from livepilot_tools.context_tools import analyze_rhythm_context
+        return analyze_rhythm_context(**kwargs)
+
+    def _get_project_intent(**kwargs):  # type: ignore[no-redef]
+        from livepilot_tools.context_tools import get_project_intent
+        return get_project_intent(**kwargs)
+
+    def _plan_arrangement_move(**kwargs):  # type: ignore[no-redef]
+        from livepilot_tools.context_tools import plan_arrangement_move
+        return plan_arrangement_move(**kwargs)
+
+    def _set_project_intent(intent, **kwargs):  # type: ignore[no-redef]
+        from livepilot_tools.context_tools import set_project_intent
+        return set_project_intent(intent, **kwargs)
+
+# ---------------------------------------------------------------------------
+# Singleton controller instance — reuse the one from ableton_controls to avoid
+# two listeners fighting over port 11001 (SO_REUSEADDR lets both bind, but
+# only one socket receives each packet, causing random response loss).
+# ---------------------------------------------------------------------------
+reliable_params = ReliableParameterController(ableton)
+
+
+# ---------------------------------------------------------------------------
+# Helper utilities (mirror jarvis_engine.py helpers, no Gemini dependency)
+# ---------------------------------------------------------------------------
+
+def _to_int(value):
+    """Coerce a value to int where possible (matches jarvis_engine.to_int)."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        try:
+            return int(float(value))
+        except ValueError:
+            return value
+    if isinstance(value, (int, float)):
+        return int(value)
+    return value
+
+
+def _explicit_flag(args: dict, *names):
+    """First of ``names`` present in args as a bool, or None. Strings: 1/true/on/yes are True."""
+    for name in names:
+        value = args.get(name)
+        if value is None:
+            continue
+        if isinstance(value, str):
+            return value.strip().lower() in ("1", "true", "on", "yes")
+        return bool(value)
+    return None
+
+
+def solo_track(track_index, args: dict):
+    """Solo/unsolo through the remote script (TCP 9878), which returns Live's own track.solo.
+
+    The old OSC path defaulted a missing or misnamed flag to "unsolo" and replied
+    "Track N unsoloed" without reading anything back (2026-10-20 session).
+    """
+    want = _explicit_flag(args, "solo", "soloed")
+    if want is None or track_index is None:
+        return {"success": False, "message": "solo_track needs track_index and solo: true/false"}
+    res = remote_script.send_command("set_track_solo", {"track_index": int(track_index), "solo": want})
+    if not res.get("success"):
+        return res
+    actual = bool(res.get("solo"))
+    ok = actual == want
+    return {"success": ok, "verified": ok, "track_index": int(track_index), "solo": actual, "soloed": int(actual),
+            "message": f"Track {int(track_index) + 1} {'soloed' if actual else 'unsoloed'} (read back)"
+                       + ("" if ok else f"; asked for {'solo' if want else 'unsolo'}")}
+
+
+def get_track_status_combined(track_index: int):
+    """Get combined mute/solo/arm status for a track."""
+    try:
+        mute_result = ableton.get_track_mute(track_index)
+        solo_result = ableton.get_track_solo(track_index)
+        arm_result = ableton.get_track_arm(track_index)
+
+        if (not mute_result.get("success")
+                or not solo_result.get("success")
+                or not arm_result.get("success")):
+            return {"success": False, "message": "Failed to query track status",
+                    "muted": None, "soloed": None, "armed": None}
+
+        return {
+            "success": True,
+            "track_index": track_index,
+            "track_number": track_index + 1,
+            "muted": mute_result.get("muted"),
+            "soloed": solo_result.get("soloed"),
+            "armed": arm_result.get("armed"),
+            "message": (
+                f"Track {track_index + 1} status: "
+                f"{'Muted' if mute_result.get('muted') else 'Unmuted'}, "
+                f"{'Soloed' if solo_result.get('soloed') else 'Not Soloed'}, "
+                f"{'Armed' if arm_result.get('armed') else 'Not Armed'}"
+            ),
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Error getting track status: {e}",
+                "muted": None, "soloed": None, "armed": None}
+
+
+def get_armed_tracks_list():
+    """Get a list of all currently armed tracks."""
+    try:
+        track_list_result = ableton.get_track_list()
+        if not track_list_result.get("success"):
+            return {"success": False, "armed_tracks": [],
+                    "message": "Failed to query track list"}
+
+        tracks = track_list_result.get("tracks", [])
+        armed_tracks = []
+        for track in tracks:
+            idx = track.get("index")
+            name = track.get("name", f"Track {idx + 1}")
+            arm_result = ableton.get_track_arm(idx)
+            if arm_result.get("success") and arm_result.get("armed"):
+                armed_tracks.append({"index": idx, "number": idx + 1, "name": name})
+
+        if not armed_tracks:
+            return {"success": True, "armed_tracks": [], "count": 0,
+                    "message": "No tracks are currently armed for recording"}
+
+        names = ", ".join(f"Track {t['number']} ({t['name']})" for t in armed_tracks)
+        return {"success": True, "armed_tracks": armed_tracks,
+                "count": len(armed_tracks),
+                "message": f"Found {len(armed_tracks)} armed track(s): {names}"}
+    except Exception as e:
+        return {"success": False, "armed_tracks": [],
+                "message": f"Error getting armed tracks: {e}"}
+
+
+def find_track_by_name(query: str):
+    """Find tracks by name using fuzzy matching."""
+    try:
+        track_list_result = ableton.get_track_list()
+        if not track_list_result.get("success"):
+            return {"success": False, "matches": [],
+                    "message": "Failed to query track list"}
+
+        tracks = track_list_result.get("tracks", [])
+        if not tracks:
+            return {"success": True, "matches": [], "count": 0,
+                    "message": "No tracks found in project"}
+
+        query_lower = query.lower().strip()
+        query_normalized = query_lower.replace("the ", "").replace("track ", "").replace("my ", "")
+        matches = []
+
+        for track in tracks:
+            track_name = track.get("name", "")
+            track_name_lower = track_name.lower()
+            track_index = track.get("index")
+            score = 0
+
+            if track_name_lower == query_lower:
+                score = 100
+            elif track_name_lower == query_normalized:
+                score = 95
+            elif query_normalized in track_name_lower:
+                score = 80
+            elif track_name_lower in query_normalized:
+                score = 70
+            else:
+                for qw in query_normalized.split():
+                    for tw in track_name_lower.split():
+                        if qw in tw or tw in qw:
+                            score = max(score, 50)
+                            break
+
+            if score > 0:
+                matches.append({"index": track_index, "number": track_index + 1,
+                                "name": track_name, "score": score})
+
+        matches.sort(key=lambda x: x["score"], reverse=True)
+
+        if not matches:
+            return {"success": True, "matches": [], "count": 0, "query": query,
+                    "message": f"No tracks found matching '{query}'. Use get_track_list to see all available tracks."}
+
+        if len(matches) == 1:
+            m = matches[0]
+            msg = f"Found 1 match: Track {m['number']} ({m['name']})"
+        else:
+            top = matches[:3]
+            info = ", ".join(f"Track {t['number']} ({t['name']})" for t in top)
+            msg = f"Found {len(matches)} match(es) for '{query}'. Top matches: {info}"
+
+        return {"success": True, "matches": matches, "count": len(matches),
+                "query": query, "message": msg,
+                "best_match": matches[0] if matches else None}
+    except Exception as e:
+        return {"success": False, "matches": [],
+                "message": f"Error finding track: {e}"}
+
+
+def delete_device_osc(track_index: int, device_index: int):
+    """Delete a device from a track using JarvisDeviceLoader OSC endpoint."""
+    import socket
+    import struct
+    import time
+
+    try:
+        address = "/jarvis/device/delete"
+        addr_bytes = address.encode("utf-8") + b"\x00"
+        addr_padded = addr_bytes + b"\x00" * ((4 - len(addr_bytes) % 4) % 4)
+        type_tag = ",ii"
+        type_bytes = type_tag.encode("utf-8") + b"\x00"
+        type_padded = type_bytes + b"\x00" * ((4 - len(type_bytes) % 4) % 4)
+        arg_data = struct.pack(">i", track_index) + struct.pack(">i", device_index)
+        message = addr_padded + type_padded + arg_data
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(3.0)
+        try:
+            sock.bind(("127.0.0.1", 11003))
+        except OSError:
+            sock.bind(("127.0.0.1", 0))
+
+        sock.sendto(message, ("127.0.0.1", 11002))
+
+        try:
+            data, _addr = sock.recvfrom(65535)
+            sock.close()
+            response_str = data.decode("utf-8", errors="ignore")
+            return {"success": True,
+                    "message": f"Device {device_index} deleted from track {track_index + 1}",
+                    "response": response_str}
+        except socket.timeout:
+            sock.close()
+            return {"success": False,
+                    "message": "Timeout: No response from JarvisDeviceLoader. Is it installed in Ableton?",
+                    "response": None}
+
+    except OSError as e:
+        if "10048" in str(e) or "Address already in use" in str(e):
+            try:
+                sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock2.sendto(message, ("127.0.0.1", 11002))
+                sock2.close()
+                time.sleep(0.5)
+                return {"success": True,
+                        "message": f"Device delete request sent for device {device_index} on track {track_index + 1}",
+                        "response": None}
+            except Exception as e2:
+                return {"success": False, "message": f"Socket error: {e2}", "response": None}
+        return {"success": False, "message": f"Socket error: {e}", "response": None}
+    except Exception as e:
+        return {"success": False, "message": f"Failed to delete device: {e}"}
+
+
+def add_utility_device(track_index: int, gain_db: float, name: str):
+    """Append a Utility device and set its Gain parameter.
+
+    AbletonOSC/JarvisDeviceLoader can load Utility and set parameters, but this
+    bridge cannot rename devices yet. The requested name is returned as metadata
+    so callers can still present the intended role clearly.
+    """
+    try:
+        before = ableton.get_track_devices_sync(track_index)
+        before_count = before.get("count", 0) if before.get("success") else None
+
+        load_result = ableton.load_device(track_index, "Utility", -1)
+        if not load_result.get("success"):
+            return load_result
+
+        device_index = before_count
+        if device_index is None:
+            after = ableton.get_track_devices_sync(track_index)
+            if not after.get("success") or after.get("count", 0) < 1:
+                return {
+                    "success": False,
+                    "message": "Utility loaded, but device index could not be resolved",
+                }
+            device_index = after.get("count") - 1
+
+        gain_result = reliable_params.set_parameter_by_name(
+            track_index,
+            device_index,
+            "Gain",
+            float(gain_db),
+        )
+        if not gain_result.get("success"):
+            return gain_result
+
+        return {
+            "success": True,
+            "track_index": track_index,
+            "device_index": device_index,
+            "gain_db": float(gain_db),
+            "requested_name": name,
+            "rename_supported": False,
+            "message": (
+                f"Utility appended to track {track_index + 1} at "
+                f"{gain_db:+.1f} dB; device rename is not exposed by the bridge"
+            ),
+        }
+    except Exception as e:
+        return {"success": False, "message": f"Failed to add Utility device: {e}"}
+
+
+# ---------------------------------------------------------------------------
+# Function introspection
+# ---------------------------------------------------------------------------
+
+def get_device_parameter_range(track_index: int, device_index: int, param_index: int):
+    """Raw min/max plus current raw value and display string for one parameter."""
+    pmin, pmax = reliable_params.get_parameter_range(track_index, device_index, param_index)
+    cur = ableton.get_device_parameter_value_sync(track_index, device_index, param_index)
+    disp = ableton.get_device_parameter_value_string_sync(track_index, device_index, param_index)
+    return {
+        "success": bool(cur.get("success")),
+        "min": pmin, "max": pmax,
+        "value": cur.get("value"),
+        "value_string": disp.get("value_string"),
+        "message": cur.get("message"),
+    }
+
+
+def nudge_device_parameter(track_index: int, device_index: int, param_name: str, fraction: float):
+    """Move a parameter by a fraction of its raw range, no unit conversion.
+
+    Reads the raw current value and range, adds fraction * (max - min), clamps,
+    sends the raw value straight to Live, then reads back raw + display string.
+    This exists so "a bit more" works without knowing whether the control is
+    dB, Hz, ms, or a percentage.
+    """
+    param_index = reliable_params.find_parameter_index(track_index, device_index, param_name)
+    if param_index is None:
+        return {"success": False, "message": f"Parameter '{param_name}' not found"}
+    before = get_device_parameter_range(track_index, device_index, param_index)
+    if not before["success"] or before["value"] is None:
+        return {"success": False, "message": f"Could not read {param_name}: {before.get('message')}"}
+    span = float(before["max"]) - float(before["min"])
+    target = max(float(before["min"]), min(float(before["max"]),
+                 float(before["value"]) + float(fraction) * span))
+    ableton.set_device_parameter(track_index, device_index, param_index, target)
+    import time as _t
+    _t.sleep(0.15)
+    after = get_device_parameter_range(track_index, device_index, param_index)
+    actual = after.get("value")
+    verified = actual is not None and abs(float(actual) - target) <= max(1e-3, abs(span) * 0.01)
+    return {
+        "success": verified,
+        "verified": verified,
+        "param_name": param_name, "param_index": param_index,
+        "min": before["min"], "max": before["max"],
+        "before": before["value"], "before_string": before["value_string"],
+        "requested": target,
+        "actual": actual, "actual_string": after.get("value_string"),
+        "message": "Nudged and verified" if verified else f"Readback {actual} != {target}",
+    }
+
+
+# ---------------------------------------------------------------------------
+# Return and master tracks. AbletonOSC only addresses song.tracks, so device
+# work on returns (A-Reverb, B-Delay) and the master goes through the LivePilot
+# remote script on TCP 9878, which encodes return N as -(N+1) and master as -1000.
+# ---------------------------------------------------------------------------
+
+TRACK_KINDS = ("track", "return", "master")
+
+
+def _track_kind(args: dict) -> str:
+    # Validated at call time (_rs_track_index) so a bad value is a JSON error, not a traceback.
+    return str(args.get("track_kind") or "track").lower()
+
+
+def _rs_track_index(kind: str, track_index) -> int:
+    if kind not in TRACK_KINDS:
+        raise ValueError(f"track_kind must be one of {TRACK_KINDS}, got {kind!r}")
+    if kind == "master":
+        return -1000
+    if track_index is None or int(track_index) < 0:
+        raise ValueError("track_kind 'return' needs track_index >= 0 (0 = first return, A)")
+    return -(int(track_index) + 1)
+
+
+def rs_get_track_devices(kind: str, track_index):
+    rs_index = _rs_track_index(kind, track_index)
+    # get_track_info reads track.mute, which the master does not have.
+    info = (remote_script.send_command("get_master_track") if kind == "master"
+            else remote_script.send_command("get_track_info", {"track_index": rs_index}))
+    if not info.get("success"):
+        return info
+    devices = info.get("devices", [])
+    return {
+        "success": True, "track_kind": kind, "track_name": info.get("name"),
+        "devices": [d.get("name") for d in devices],
+        "class_names": [d.get("class_name") for d in devices],
+        "count": len(devices), "message": f"Found {len(devices)} devices",
+    }
+
+
+def rs_get_device_parameters(kind: str, track_index, device_index: int):
+    res = remote_script.send_command("get_device_parameters", {
+        "track_index": _rs_track_index(kind, track_index), "device_index": int(device_index)})
+    if not res.get("success"):
+        return res
+    params = res.get("parameters", [])
+    return {"success": True, "track_kind": kind, "names": [p.get("name") for p in params],
+            "parameters": params, "count": len(params), "message": f"Found {len(params)} parameters"}
+
+
+def rs_set_device_parameter(kind: str, track_index, device_index: int, value,
+                            param_index=None, param_name=None):
+    """Write a RAW Live value (the parameter's own min..max) and read it back.
+
+    No unit guessing: get the range from get_device_parameters first. Out-of-range
+    values are refused rather than silently clamped by Live.
+    """
+    rs_index = _rs_track_index(kind, track_index)
+    current = remote_script.send_command("get_device_parameters", {
+        "track_index": rs_index, "device_index": int(device_index)})
+    if not current.get("success"):
+        return current
+    params = current.get("parameters", [])
+    if param_name is not None:
+        matches = [p for p in params if p.get("name") == param_name] or \
+                  [p for p in params if str(p.get("name", "")).lower() == str(param_name).lower()]
+    else:
+        matches = [p for p in params if p.get("index") == int(param_index)]
+    if not matches:
+        return {"success": False, "message": f"Parameter {param_name if param_name is not None else param_index} "
+                f"not found. Available: {[p.get('name') for p in params][:30]}"}
+    before = matches[0]
+    value = float(value)
+    pmin, pmax = float(before["min"]), float(before["max"])
+    if not (pmin <= value <= pmax):
+        return {"success": False, "verified": False, "min": pmin, "max": pmax,
+                "current": before.get("value"), "current_string": before.get("value_string"),
+                "message": f"{before['name']}: {value} is outside raw range {pmin}..{pmax} "
+                           "(return/master writes are raw Live values)"}
+    res = remote_script.send_command("set_device_parameter", {
+        "track_index": rs_index, "device_index": int(device_index),
+        "parameter_index": int(before["index"]), "value": value})
+    if not res.get("success"):
+        return res
+    actual = res.get("value")
+    verified = actual is not None and abs(float(actual) - value) <= max(1e-4, (pmax - pmin) * 0.001)
+    return {
+        "success": verified, "verified": verified, "track_kind": kind,
+        "param_name": before["name"], "param_index": before["index"],
+        "min": pmin, "max": pmax,
+        "before": before.get("value"), "before_string": before.get("value_string"),
+        "requested_value": value, "actual_value": actual, "actual_string": res.get("value_string"),
+        "message": "Set and verified" if verified else f"Readback {actual} != {value}",
+    }
+
+
+def add_plugin_to_track(kind: str, track_index, plugin_name: str, position: int, timeout):
+    """Load a plugin at `position`, then read the chain back to confirm where it landed."""
+    if kind != "track":
+        _rs_track_index(kind, track_index)  # validates kind and index
+    load_index = -1 if kind == "master" else track_index
+    result = ableton.load_device(load_index, plugin_name, position, timeout, track_kind=kind)
+    if result.get("success"):
+        chain = (ableton.get_track_devices_sync(track_index) if kind == "track"
+                 else rs_get_track_devices(kind, track_index))
+        result["devices_after"] = chain.get("devices")
+    return result
+
+
+def rs_set_device_parameters_by_name(kind: str, track_index, device_index: int, params: dict):
+    details = [rs_set_device_parameter(kind, track_index, device_index, v, param_name=n)
+               for n, v in (params or {}).items()]
+    ok = sum(1 for d in details if d.get("success"))
+    return {"success": ok == len(details), "total": len(details), "succeeded": ok,
+            "failed": len(details) - ok, "details": details}
+
+
+def _describe_functions():
+    """Return a dict describing all available functions, their args, and types."""
+    descriptions = {
+        "play":                {"args": {}, "description": "Start playback"},
+        "stop":                {"args": {}, "description": "Stop playback"},
+        "continue_playback":   {"args": {}, "description": "Continue playback from current position"},
+        "start_recording":     {"args": {}, "description": "Start recording"},
+        "stop_recording":      {"args": {}, "description": "Stop recording"},
+        "toggle_metronome":    {"args": {"state": {"type": "int", "required": True, "description": "1=on, 0=off"}}, "description": "Toggle metronome"},
+        "set_tempo":           {"args": {"bpm": {"type": "float", "required": True, "description": "Tempo 20-999"}}, "description": "Set tempo"},
+        "set_position":        {"args": {"beat": {"type": "float", "required": True, "description": "Position in beats"}}, "description": "Set playback position"},
+        "set_loop":            {"args": {"enabled": {"type": "int", "required": True, "description": "1=on, 0=off"}}, "description": "Enable/disable loop"},
+        "set_loop_start":      {"args": {"beat": {"type": "float", "required": True, "description": "Start position in beats"}}, "description": "Set loop start"},
+        "set_loop_length":     {"args": {"beats": {"type": "float", "required": True, "description": "Length in beats"}}, "description": "Set loop length"},
+        "mute_track":          {"args": {"track_index": {"type": "int", "required": True}, "muted": {"type": "int", "required": True, "description": "1=muted, 0=unmuted"}, "verify": {"type": "bool", "required": False, "description": "Read back to confirm"}}, "description": "Mute/unmute a track"},
+        "solo_track":          {"args": {"track_index": {"type": "int", "required": True}, "solo": {"type": "bool", "required": True, "description": "true=solo, false=unsolo ('soloed' 1/0 also accepted)"}}, "description": "Solo/unsolo a track; always reads the state back from Live"},
+        "arm_track":           {"args": {"track_index": {"type": "int", "required": True}, "armed": {"type": "int", "required": True, "description": "1=armed, 0=disarmed"}, "verify": {"type": "bool", "required": False, "description": "Read back to confirm"}}, "description": "Arm/disarm a track"},
+        "set_track_volume":    {"args": {"track_index": {"type": "int", "required": True}, "volume": {"type": "float", "required": True, "description": "0.0-1.0"}, "verify": {"type": "bool", "required": False, "description": "Read back to confirm"}}, "description": "Set track volume"},
+        "set_track_pan":       {"args": {"track_index": {"type": "int", "required": True}, "pan": {"type": "float", "required": True, "description": "-1.0 to 1.0"}, "verify": {"type": "bool", "required": False, "description": "Read back to confirm"}}, "description": "Set track pan"},
+        "set_track_send":      {"args": {"track_index": {"type": "int", "required": True}, "send_index": {"type": "int", "required": True}, "level": {"type": "float", "required": True, "description": "0.0-1.0"}, "verify": {"type": "bool", "required": False, "description": "Read back to confirm"}}, "description": "Set track send level"},
+        "get_track_list":      {"args": {}, "description": "Get all tracks with indices and names"},
+        "get_track_mute":      {"args": {"track_index": {"type": "int", "required": True}}, "description": "Get track mute status"},
+        "get_track_solo":      {"args": {"track_index": {"type": "int", "required": True}}, "description": "Get track solo status"},
+        "get_track_arm":       {"args": {"track_index": {"type": "int", "required": True}}, "description": "Get track arm status"},
+        "get_track_volume":    {"args": {"track_index": {"type": "int", "required": True}}, "description": "Get track volume level"},
+        "get_track_pan":       {"args": {"track_index": {"type": "int", "required": True}}, "description": "Get track pan position"},
+        "get_track_send":      {"args": {"track_index": {"type": "int", "required": True}, "send_index": {"type": "int", "required": True}}, "description": "Get track send level"},
+        "get_track_status":    {"args": {"track_index": {"type": "int", "required": True}}, "description": "Get combined mute/solo/arm status"},
+        "get_mixer_snapshot":  {"args": {"track_indices": {"type": "list[int]", "required": False}, "include_returns": {"type": "bool", "required": False}}, "description": "Get atomic composite mixer snapshot of song transport and track faders/mutes/solos/arms"},
+        "get_track_meters":    {"args": {"track_index": {"type": "int", "required": False, "description": "Omit for all tracks"}, "include_stereo": {"type": "bool", "required": False, "description": "Add left/right levels"}}, "description": "Track output meter levels (0.0-1.0, Live meter scale, not dBFS) via the LivePilot remote script"},
+        "get_master_meters":   {"args": {}, "description": "Master output meter level/left/right (0.0-1.0, Live meter scale, not dBFS) via the LivePilot remote script"},
+        "get_armed_tracks":    {"args": {}, "description": "List all armed tracks"},
+        "find_track_by_name":  {"args": {"query": {"type": "str", "required": True}}, "description": "Find tracks by name (fuzzy)"},
+        "fire_scene":          {"args": {"scene_index": {"type": "int", "required": True}}, "description": "Fire a scene"},
+        "fire_clip":           {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}}, "description": "Fire a clip"},
+        "stop_clip":           {"args": {"track_index": {"type": "int", "required": True}}, "description": "Stop all clips on a track"},
+        "create_clip":         {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}, "length": {"type": "float", "required": False, "description": "Beats, default 4.0"}}, "description": "Create an empty MIDI clip in a Session slot"},
+        "delete_clip":         {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}}, "description": "Delete the clip in a Session slot"},
+        "add_clip_notes":      {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}, "notes": {"type": "list", "required": True, "description": "[{pitch, start_time, duration, velocity, mute?}] or [pitch, start, dur, vel, mute]; beats; replaces the clip's notes"}}, "description": "Write MIDI notes into a Session clip and verify the whole clip"},
+        "get_clip_notes":      {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}, "timeout": {"type": "float", "required": False}}, "description": "Read a Session clip's MIDI notes"},
+        "remove_clip_notes":   {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}, "start_pitch": {"type": "int", "required": False}, "pitch_span": {"type": "int", "required": False}, "start_time": {"type": "float", "required": False}, "time_span": {"type": "float", "required": False}}, "description": "Remove MIDI notes in a pitch/time range (default: all)"},
+        "create_audio_track":  {"args": {"index": {"type": "int", "required": False, "description": "-1=end"}, "name": {"type": "str", "required": False}}, "description": "Create audio track"},
+        "set_clip_path":       {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}, "audio_path": {"type": "str", "required": True}}, "description": "Place local audio file into a Session clip slot"},
+        "get_clip_audio_path": {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}}, "description": "Return backing audio path for an audio Session clip"},
+        "set_clip_detune":     {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}, "cents": {"type": "float", "required": True}}, "description": "Detune an audio Session clip in cents"},
+        "create_midi_track":   {"args": {"index": {"type": "int", "required": False, "description": "-1=end"}}, "description": "Create MIDI track"},
+        "create_return_track": {"args": {}, "description": "Create return track"},
+        "delete_track":        {"args": {"track_index": {"type": "int", "required": True}}, "description": "Delete a track"},
+        "delete_return_track": {"args": {"track_index": {"type": "int", "required": True}}, "description": "Delete a return track"},
+        "duplicate_track":     {"args": {"track_index": {"type": "int", "required": True}}, "description": "Duplicate a track"},
+        "set_track_name":      {"args": {"track_index": {"type": "int", "required": True}, "name": {"type": "str", "required": True}}, "description": "Rename a track"},
+        "set_track_color":     {"args": {"track_index": {"type": "int", "required": True}, "color_index": {"type": "int", "required": True}}, "description": "Set track color"},
+        "get_num_devices":     {"args": {"track_index": {"type": "int", "required": True}}, "description": "Get device count on track"},
+        "get_track_devices":   {"args": {"track_index": {"type": "int", "required": True}, "track_kind": {"type": "str", "required": False, "description": "track (default) | return (track_index 0 = A) | master (track_index ignored)"}}, "description": "Get device names on a track, return track, or the master"},
+        "get_device_tree":     {"args": {"track_index": {"type": "int", "required": True}, "timeout": {"type": "float", "required": False}}, "description": "Get recursive device tree for a track"},
+        "get_all_device_trees": {"args": {"track_indices": {"type": "list|null", "required": False}, "timeout": {"type": "float", "required": False}}, "description": "Get recursive device trees for selected or all tracks"},
+        "get_device_params_by_path": {"args": {"track_index": {"type": "int", "required": True}, "device_path": {"type": "list|str", "required": True}, "timeout": {"type": "float", "required": False}}, "description": "Get nested device parameters by captured path"},
+        "get_device_name":     {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}}, "description": "Get device name"},
+        "get_device_class_name": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}}, "description": "Get device class name"},
+        "get_device_parameters": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "track_kind": {"type": "str", "required": False, "description": "track (default) | return (track_index 0 = A) | master (track_index ignored)"}}, "description": "Get device parameter names (return/master also include raw value, min, max, display string)"},
+        "get_device_parameter_value": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_index": {"type": "int", "required": True}}, "description": "Get device parameter value"},
+        "get_device_parameter_value_string": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_index": {"type": "int", "required": True}}, "description": "Get device parameter display string"},
+        "get_device_parameter_range": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_index": {"type": "int", "required": True}}, "description": "Raw min/max, current raw value, and display string for a parameter"},
+        "nudge_device_parameter": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_name": {"type": "str", "required": True}, "fraction": {"type": "float", "required": True, "description": "Fraction of the raw range to move by, e.g. 0.1 or -0.1"}}, "description": "Move a parameter by a fraction of its range (raw, verified readback)"},
+        "set_device_parameter": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_index": {"type": "int", "required": True}, "value": {"type": "float", "required": True}, "track_kind": {"type": "str", "required": False, "description": "track (default) | return (track_index 0 = A) | master (track_index ignored)"}}, "description": "Set device parameter (verified). Return/master take the raw Live value within the parameter min..max"},
+        "set_device_parameter_by_name": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "param_name": {"type": "str", "required": True}, "value": {"type": "float", "required": True}, "track_kind": {"type": "str", "required": False, "description": "track (default) | return (track_index 0 = A) | master (track_index ignored)"}}, "description": "Set device parameter by name. Return/master take the raw Live value"},
+        "set_device_parameters_by_name": {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "params": {"type": "dict", "required": True, "description": "{name: value, ...}"}, "track_kind": {"type": "str", "required": False, "description": "track (default) | return (track_index 0 = A) | master (track_index ignored)"}}, "description": "Set multiple device parameters by name. Return/master take raw Live values"},
+        "set_device_enabled":  {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "enabled": {"type": "int", "required": True}}, "description": "Enable/bypass a device"},
+        "delete_device":       {"args": {"track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}}, "description": "Delete a device from track"},
+        "add_utility_device":  {"args": {"track_index": {"type": "int", "required": True}, "gain_db": {"type": "float", "required": True}, "name": {"type": "str", "required": True}}, "description": "Append Utility and set Gain"},
+        "add_plugin_to_track": {"args": {"track_index": {"type": "int", "required": True}, "plugin_name": {"type": "str", "required": True}, "position": {"type": "int", "required": False, "description": "Chain index for the new device, -1 = end (default)"}, "track_kind": {"type": "str", "required": False, "description": "track (default) | return (track_index 0 = A) | master (track_index ignored)"}}, "description": "Load a plugin onto a track, return track, or the master at a chain position"},
+        "get_available_plugins": {"args": {"category": {"type": "str", "required": False}}, "description": "List available plugins"},
+        "find_plugin":         {"args": {"query": {"type": "str", "required": True}, "category": {"type": "str", "required": False}}, "description": "Find plugin by name"},
+        "refresh_plugin_list": {"args": {}, "description": "Refresh plugin list from Ableton"},
+        "diag_osc":            {"args": {"timeout": {"type": "float", "required": False, "description": "Timeout in seconds (default 3.0)"}}, "description": "Run OSC connectivity diagnostic"},
+        "get_creative_context": {"args": {}, "description": "Get structured creative context for the current LivePilot session"},
+        "analyze_clip_context": {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}}, "description": "Summarize MIDI notes in a clip where the controller exposes them"},
+        "analyze_rhythm_context": {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": True}, "role": {"type": "str|null", "required": False}}, "description": "Summarize MIDI-only rhythm grid alignment for a clip"},
+        "plan_arrangement_move": {"args": {"goal": {"type": "str", "required": True}, "target_section": {"type": "str|null", "required": False}}, "description": "Create a reviewable arrangement move plan without executing Ableton changes"},
+        "set_project_intent":  {"args": {"intent": {"type": "dict", "required": False, "description": "Project intent object; direct JSON args are also accepted"}}, "description": "Persist project intent for creative context"},
+        "get_project_intent":  {"args": {}, "description": "Get persisted project intent"},
+        "list_plugin_recipes": {"args": {}, "description": "List saved plugin parameter recipes"},
+        "save_plugin_recipe":  {"args": {"name": {"type": "str", "required": True}, "track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}, "note": {"type": "str", "required": False}}, "description": "Snapshot device params to data/recipes/"},
+        "apply_plugin_recipe": {"args": {"name": {"type": "str", "required": True}, "track_index": {"type": "int", "required": True}, "device_index": {"type": "int", "required": True}}, "description": "Apply a saved plugin recipe"},
+        "get_track_routing":   {"args": {"track_index": {"type": "int", "required": True}}, "description": "Get track input/output routing options, current routing, and monitoring state"},
+        "set_track_input_routing": {"args": {"track_index": {"type": "int", "required": True}, "routing_name": {"type": "str", "required": False, "description": "Routing display name; default 'Resampling'"}}, "description": "Set a track's input routing by name (e.g. Resampling for bit-clean self-capture)"},
+        "set_track_output_routing": {"args": {"track_index": {"type": "int", "required": True}, "routing_name": {"type": "str", "required": True}}, "description": "Set a track's output routing by name"},
+        "set_track_monitoring": {"args": {"track_index": {"type": "int", "required": True}, "state": {"type": "int", "required": True, "description": "0=In, 1=Auto, 2=Off"}}, "description": "Set track monitoring state"},
+        "get_song_status":     {"args": {}, "description": "Transport + song snapshot: is_playing, record_mode, tempo, current time, arrangement length (beats and seconds), loop, time signature"},
+        "set_record_mode":     {"args": {"state": {"type": "int", "required": True, "description": "1=arrangement record on, 0=off"}}, "description": "Set arrangement record mode"},
+        "set_session_record":  {"args": {"state": {"type": "int", "required": True}}, "description": "Set session record"},
+        "back_to_arranger":    {"args": {}, "description": "Return playback authority to the arrangement (the orange Back to Arrangement button)"},
+        "get_cue_points":      {"args": {}, "description": "List arrangement locators (name + beat time)"},
+        "get_arrangement_clips": {"args": {"track_index": {"type": "int", "required": True}}, "description": "List a track's arrangement clips with start/end and audio file paths"},
+        "place_in_arrangement": {"args": {"track_index": {"type": "int", "required": True}, "clip_index": {"type": "int", "required": False, "description": "Session slot, default 0"}, "beat": {"type": "float", "required": False, "description": "Arrangement start beat, default 0"}, "warping": {"type": "int", "required": False, "description": "1=warp on, 0=off, -1=leave (default)"}, "clear_existing": {"type": "int", "required": False, "description": "1=delete the track's arrangement clips first (default)"}, "end_beat": {"type": "float", "required": False, "description": "Warped clips only: full clip length in beats"}}, "description": "Copy a Session clip onto the arrangement at an exact beat, no recording. Unwarped audio is placed whole (start 0, end = file length) and its end_time is checked, else refused"},
+        "j_play":              {"args": {}, "description": "Start playback (jarvis port, batch-safe)"},
+        "j_stop":              {"args": {}, "description": "Stop playback (jarvis port, batch-safe)"},
+        "j_set_position":      {"args": {"beat": {"type": "float", "required": True}}, "description": "Set playhead (jarvis port, batch-safe)"},
+        "j_arm":               {"args": {"track_index": {"type": "int", "required": True}, "armed": {"type": "int", "required": False}}, "description": "Arm track (jarvis port, batch-safe)"},
+        "j_create_audio_track": {"args": {}, "description": "Create audio track at end, returns its index (jarvis port, batch-safe)"},
+        "j_delete_track":      {"args": {"track_index": {"type": "int", "required": True}}, "description": "Delete track (jarvis port, batch-safe)"},
+        "j_track_names":       {"args": {}, "description": "List track names (jarvis port, batch-safe)"},
+        "describe_functions":  {"args": {}, "description": "List all functions with argument schemas"},
+    }
+    return {"success": True, "functions": descriptions, "count": len(descriptions)}
+
+
+# ---------------------------------------------------------------------------
+# Function dispatch table
+# ---------------------------------------------------------------------------
+
+def _build_dispatch(args: dict):
+    """Build and return the function dispatch table for a given args dict.
+
+    The returned dict maps function-name strings to zero-arg callables.
+    """
+    track_index = _to_int(args.get("track_index"))
+    verify = bool(args.get("verify", False))
+    kind = _track_kind(args)
+
+    return {
+        # -- Playback --
+        "play":                lambda: ableton.play(),
+        "stop":                lambda: ableton.stop(),
+        "continue_playback":   lambda: ableton.continue_playback(),
+        "start_recording":     lambda: ableton.start_recording(),
+        "stop_recording":      lambda: ableton.stop_recording(),
+        "toggle_metronome":    lambda: ableton.toggle_metronome(_to_int(args.get("state"))),
+
+        # -- Transport --
+        "set_tempo":           lambda: ableton.set_tempo(args.get("bpm")),
+        "set_position":        lambda: ableton.set_position(args.get("beat")),
+        "set_loop":            lambda: ableton.set_loop(_to_int(args.get("enabled"))),
+        "set_loop_start":      lambda: ableton.set_loop_start(args.get("beat")),
+        "set_loop_length":     lambda: ableton.set_loop_length(args.get("beats")),
+
+        # -- Track controls --
+        "mute_track":          lambda: ableton.mute_track(track_index, _to_int(args.get("muted")), verify=verify),
+        "solo_track":          lambda: solo_track(track_index, args),
+        "arm_track":           lambda: ableton.arm_track(track_index, _to_int(args.get("armed")), verify=verify),
+        "set_track_volume":    lambda: ableton.set_track_volume(track_index, args.get("volume"), verify=verify),
+        "set_track_pan":       lambda: ableton.set_track_pan(track_index, args.get("pan"), verify=verify),
+        "set_track_send":      lambda: ableton.set_track_send(
+            track_index, _to_int(args.get("send_index")), args.get("level"), verify=verify),
+
+        # -- Scene / clip --
+        "fire_scene":          lambda: ableton.fire_scene(_to_int(args.get("scene_index"))),
+        "fire_clip":           lambda: ableton.fire_clip(track_index, _to_int(args.get("clip_index"))),
+        "stop_clip":           lambda: ableton.stop_clip(track_index),
+        "create_clip":         lambda: ableton.create_clip(
+            track_index, _to_int(args.get("clip_index")), float(args.get("length", 4.0))),
+        "delete_clip":         lambda: ableton.delete_clip(
+            track_index, _to_int(args.get("clip_index"))),
+        "add_clip_notes":      lambda: ableton.add_clip_notes(
+            track_index, _to_int(args.get("clip_index")), args.get("notes", [])),
+        "get_clip_notes":      lambda: ableton.get_clip_notes(
+            track_index, _to_int(args.get("clip_index")), float(args.get("timeout", 3.0))),
+        "remove_clip_notes":   lambda: ableton.remove_clip_notes(
+            track_index, _to_int(args.get("clip_index")),
+            _to_int(args.get("start_pitch", 0)), _to_int(args.get("pitch_span", 128)),
+            float(args.get("start_time", 0.0)), float(args.get("time_span", 1000.0))),
+
+        # -- Track management --
+        "create_audio_track":  lambda: ableton.create_audio_track(
+            _to_int(args.get("index", -1)), args.get("name")),
+        "set_clip_path":       lambda: ableton.set_clip_path(
+            track_index, _to_int(args.get("clip_index")), args.get("audio_path")),
+        "get_clip_audio_path": lambda: ableton.get_clip_audio_path(
+            track_index, _to_int(args.get("clip_index", 0))),
+        "set_clip_detune":     lambda: ableton.set_clip_detune(
+            track_index, _to_int(args.get("clip_index")), args.get("cents")),
+        "create_midi_track":   lambda: ableton.create_midi_track(_to_int(args.get("index", -1))),
+        "create_return_track": lambda: ableton.create_return_track(),
+        "delete_track":        lambda: ableton.delete_track(track_index),
+        "delete_return_track": lambda: ableton.delete_return_track(track_index),
+        "duplicate_track":     lambda: ableton.duplicate_track(track_index),
+        "set_track_name":      lambda: ableton.set_track_name(track_index, args.get("name")),
+        "set_track_color":     lambda: ableton.set_track_color(track_index, _to_int(args.get("color_index"))),
+
+        # -- Track queries --
+        "get_track_list":      lambda: ableton.get_track_list(),
+        "get_track_mute":      lambda: ableton.get_track_mute(track_index),
+        "get_track_solo":      lambda: ableton.get_track_solo(track_index),
+        "get_track_arm":       lambda: ableton.get_track_arm(track_index),
+        "get_track_volume":    lambda: ableton.get_track_volume(track_index),
+        "get_track_pan":       lambda: ableton.get_track_pan(track_index),
+        "get_track_send":      lambda: ableton.get_track_send(track_index, _to_int(args.get("send_index"))),
+        "get_track_status":    lambda: get_track_status_combined(track_index),
+        "get_mixer_snapshot":  lambda: ableton.get_mixer_snapshot(
+            track_indices=args.get("track_indices"),
+            include_returns=bool(args.get("include_returns", False)),
+        ),
+        "get_track_meters":    lambda: remote_script.get_track_meters(
+            track_index, bool(args.get("include_stereo", False))),
+        "get_master_meters":   lambda: remote_script.get_master_meters(),
+        "get_armed_tracks":    lambda: get_armed_tracks_list(),
+        "find_track_by_name":  lambda: find_track_by_name(args.get("query")),
+
+        # -- Device queries --
+        "get_num_devices":     lambda: ableton.get_num_devices_sync(track_index),
+        "get_track_devices":   lambda: ableton.get_track_devices_sync(track_index) if kind == "track"
+                               else rs_get_track_devices(kind, track_index),
+        "get_device_tree":     lambda: ableton.get_device_tree(
+            track_index, float(args.get("timeout", 15.0))),
+        "get_all_device_trees": lambda: ableton.get_all_device_trees(
+            args.get("track_indices"), float(args.get("timeout", 15.0))),
+        "get_device_params_by_path": lambda: ableton.get_device_params_by_path(
+            track_index, args.get("device_path"), float(args.get("timeout", 15.0))),
+        "get_device_name":     lambda: ableton.get_device_name(
+            track_index, _to_int(args.get("device_index"))),
+        "get_device_class_name": lambda: ableton.get_device_class_name(
+            track_index, _to_int(args.get("device_index"))),
+        "get_device_parameters": lambda: ableton.get_device_parameters_name_sync(
+            track_index, _to_int(args.get("device_index"))) if kind == "track"
+            else rs_get_device_parameters(kind, track_index, _to_int(args.get("device_index"))),
+        "get_device_parameter_value": lambda: ableton.get_device_parameter_value_sync(
+            track_index, _to_int(args.get("device_index")),
+            _to_int(args.get("param_index"))),
+        "get_device_parameter_value_string": lambda: ableton.get_device_parameter_value_string_sync(
+            track_index, _to_int(args.get("device_index")),
+            _to_int(args.get("param_index"))),
+
+        "get_device_parameter_range": lambda: get_device_parameter_range(
+            track_index, _to_int(args.get("device_index")),
+            _to_int(args.get("param_index"))),
+
+        # -- Device control --
+        "nudge_device_parameter": lambda: nudge_device_parameter(
+            track_index, _to_int(args.get("device_index")),
+            args.get("param_name"), float(args.get("fraction", 0.1))),
+        "set_device_parameter": lambda: reliable_params.set_parameter_verified(
+            track_index, _to_int(args.get("device_index")),
+            _to_int(args.get("param_index")), args.get("value")) if kind == "track"
+            else rs_set_device_parameter(kind, track_index, _to_int(args.get("device_index")),
+                                         args.get("value"), param_index=_to_int(args.get("param_index"))),
+        "set_device_parameter_by_name": lambda: reliable_params.set_parameter_by_name(
+            track_index, _to_int(args.get("device_index")),
+            args.get("param_name"), args.get("value")) if kind == "track"
+            else rs_set_device_parameter(kind, track_index, _to_int(args.get("device_index")),
+                                         args.get("value"), param_name=args.get("param_name")),
+        "set_device_parameters_by_name": lambda: reliable_params.set_parameters_by_name(
+            track_index, _to_int(args.get("device_index")),
+            args.get("params", {})) if kind == "track"
+            else rs_set_device_parameters_by_name(kind, track_index, _to_int(args.get("device_index")),
+                                                  args.get("params", {})),
+        "set_device_enabled":  lambda: ableton.set_device_enabled(
+            track_index, _to_int(args.get("device_index")),
+            _to_int(args.get("enabled"))),
+        "delete_device":       lambda: delete_device_osc(
+            track_index, _to_int(args.get("device_index"))),
+        "add_utility_device":  lambda: add_utility_device(
+            track_index, args.get("gain_db"), args.get("name")),
+
+        # -- Plugin management --
+        "add_plugin_to_track": lambda: add_plugin_to_track(
+            kind, track_index, args.get("plugin_name"), _to_int(args.get("position", -1)),
+            float(args.get("timeout", 0) or 0) or None),
+        "get_available_plugins": lambda: ableton.get_available_plugins(args.get("category")),
+        "find_plugin":         lambda: ableton.find_plugin(
+            args.get("query"), args.get("category")),
+        "refresh_plugin_list": lambda: ableton.refresh_plugin_list(),
+
+        # -- Diagnostics --
+        "diag_osc":            lambda: ableton.diag_osc(float(args.get("timeout", 3.0))),
+
+        # -- Creative context --
+        "get_creative_context": lambda: _get_creative_context(controller=ableton, reliable=reliable_params),
+        "analyze_clip_context": lambda: _analyze_clip_context(
+            track_index=track_index,
+            clip_index=_to_int(args.get("clip_index")),
+            controller=ableton,
+            reliable=reliable_params,
+        ),
+        "analyze_rhythm_context": lambda: _analyze_rhythm_context(
+            track_index=track_index,
+            clip_index=_to_int(args.get("clip_index")),
+            role=args.get("role"),
+            controller=ableton,
+            reliable=reliable_params,
+        ),
+        "plan_arrangement_move": lambda: _plan_arrangement_move(
+            goal=args.get("goal"),
+            target_section=args.get("target_section"),
+            controller=ableton,
+            reliable=reliable_params,
+        ),
+        "set_project_intent": lambda: _set_project_intent(args.get("intent", args)),
+        "get_project_intent": lambda: _get_project_intent(),
+
+        # -- Plugin recipes --
+        "list_plugin_recipes": lambda: _list_plugin_recipes(),
+        "save_plugin_recipe":  lambda: _save_plugin_recipe(
+            args.get("name"),
+            track_index,
+            _to_int(args.get("device_index")),
+            controller=ableton,
+            note=args.get("note"),
+        ),
+        "apply_plugin_recipe": lambda: _apply_plugin_recipe(
+            args.get("name"),
+            track_index,
+            _to_int(args.get("device_index")),
+            reliable=reliable_params,
+            controller=ableton,
+        ),
+
+        # -- Introspection --
+        # -- Extended API: routing / transport / arrangement --
+        "get_track_routing":   lambda: ableton.get_track_routing(track_index),
+        "set_track_input_routing": lambda: ableton.set_track_input_routing(track_index, str(args.get("routing_name", "Resampling"))),
+        "set_track_output_routing": lambda: ableton.set_track_output_routing(track_index, str(args.get("routing_name", ""))),
+        "set_track_monitoring": lambda: ableton.set_track_monitoring(track_index, _to_int(args.get("state"))),
+        "get_song_status":     lambda: ableton.get_song_status(),
+        "set_record_mode":     lambda: ableton.set_record_mode(_to_int(args.get("state"))),
+        "set_session_record":  lambda: ableton.set_session_record(_to_int(args.get("state"))),
+        "back_to_arranger":    lambda: ableton.back_to_arranger(),
+        "get_cue_points":      lambda: ableton.get_cue_points(),
+        "get_arrangement_clips": lambda: ableton.get_arrangement_clips(track_index),
+        "place_in_arrangement": lambda: ableton.place_in_arrangement(track_index, _to_int(args.get("clip_index", 0)), float(args.get("beat", 0.0)), _to_int(args.get("warping", -1)), _to_int(args.get("clear_existing", 1)), float(args.get("end_beat", 0.0))),
+
+        "j_play":              lambda: ableton.j_play(),
+        "j_stop":              lambda: ableton.j_stop(),
+        "j_set_position":      lambda: ableton.j_set_position(args.get("beat", 0.0)),
+        "j_arm":               lambda: ableton.j_arm(track_index, _to_int(args.get("armed", 1))),
+        "j_create_audio_track": lambda: ableton.j_create_audio_track(),
+        "j_delete_track":      lambda: ableton.j_delete_track(track_index),
+        "j_track_names":       lambda: ableton.j_track_names(),
+
+        "describe_functions":  lambda: _describe_functions(),
+    }
+
+
+# Operations that require a track_index argument
+TRACK_OPERATIONS = {
+    "mute_track", "solo_track", "arm_track",
+    "set_track_volume", "set_track_pan", "set_track_send",
+    "fire_clip", "stop_clip", "set_clip_path", "get_clip_audio_path", "set_clip_detune",
+    "get_num_devices", "get_track_devices", "get_device_tree",
+    "get_device_params_by_path", "get_device_name",
+    "get_device_class_name", "get_device_parameters",
+    "get_device_parameter_value", "get_device_parameter_value_string", "set_device_parameter",
+    "get_device_parameter_range", "nudge_device_parameter",
+    "set_device_parameter_by_name", "set_device_parameters_by_name",
+    "set_device_enabled",
+    "add_plugin_to_track", "delete_device", "add_utility_device",
+    "delete_track", "delete_return_track", "duplicate_track",
+    "set_track_name", "set_track_color",
+    "get_track_mute", "get_track_solo", "get_track_arm",
+    "get_track_volume", "get_track_pan", "get_track_send",
+    "get_track_status",
+    "analyze_clip_context", "analyze_rhythm_context",
+}
+
+
+def list_functions() -> list[str]:
+    """Return sorted list of all available function names."""
+    return sorted(_build_dispatch({}).keys())
+
+
+# ---------------------------------------------------------------------------
+# Main CLI entry point
+# ---------------------------------------------------------------------------
+
+def main():
+    if len(sys.argv) < 2:
+        print(json.dumps({"error": "Usage: ableton_bridge.py <function_name> '<json_args>' | --list"}))
+        sys.exit(1)
+
+    # --list mode
+    if sys.argv[1] == "--list":
+        print(json.dumps({"functions": list_functions()}, indent=2))
+        sys.exit(0)
+
+    func_name = sys.argv[1]
+    raw_args = sys.argv[2] if len(sys.argv) > 2 else "{}"
+
+    # Parse JSON args (with fallback to --flag style)
+    try:
+        args = json.loads(raw_args)
+    except json.JSONDecodeError:
+        # Fallback: parse --key value pairs from argv
+        args = {}
+        argv = sys.argv[2:]
+        i = 0
+        while i < len(argv):
+            if argv[i].startswith("--"):
+                key = argv[i][2:].replace("-", "_")
+                if i + 1 < len(argv) and not argv[i+1].startswith("--"):
+                    val = argv[i + 1]
+                    # Auto-convert numeric strings
+                    try:
+                        val = int(val)
+                    except ValueError:
+                        try:
+                            val = float(val)
+                        except ValueError:
+                            pass
+                    args[key] = val
+                    i += 2
+                else:
+                    args[key] = True
+                    i += 1
+            else:
+                i += 1
+        
+        if not args:
+            # If we couldn't parse flags either, show the original error
+            print(json.dumps({
+                "success": False, 
+                "error": f"Invalid JSON args. Received: {repr(raw_args)}. Use flag style instead: --track_index 0 --device_index 2"
+            }))
+            sys.exit(1)
+
+    if not isinstance(args, dict):
+        print(json.dumps({"success": False, "error": "Args must be a JSON object"}))
+        sys.exit(1)
+
+    # Validate track_index for operations that require it
+    if (func_name in TRACK_OPERATIONS and args.get("track_index") is None
+            and str(args.get("track_kind", "")).lower() != "master"):
+        print(json.dumps({
+            "success": False,
+            "error": f"{func_name} requires 'track_index'. Specify which track (0-based).",
+        }))
+        sys.exit(1)
+
+    # Build dispatch and execute
+    dispatch = _build_dispatch(args)
+
+    if func_name not in dispatch:
+        print(json.dumps({
+            "success": False,
+            "error": f"Unknown function '{func_name}'. Use --list to see available functions.",
+        }))
+        sys.exit(1)
+
+    try:
+        result = dispatch[func_name]()
+    except Exception as e:
+        print(json.dumps({"success": False, "error": str(e)}))
+        sys.exit(1)
+
+    # Normalize output to JSON
+    if isinstance(result, dict):
+        print(json.dumps(result, indent=2, default=str))
+    elif result is None:
+        print(json.dumps({"success": True, "message": f"{func_name} executed (no return value)."}))
+    else:
+        print(json.dumps({"success": True, "result": result}, default=str))
+
+
+if __name__ == "__main__":
+    main()

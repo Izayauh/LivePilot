@@ -1,0 +1,33 @@
+{
+  "schema": "livepilot-plugin-recipe-v1",
+  "name": "vox-crewlove-drake-2-comp",
+  "plugin_name": "Compressor",
+  "device_class": "AbletonDevice",
+  "value_units": "raw",
+  "params": {
+    "Device On": 1.0,
+    "Threshold": 0.32958984375,
+    "Ratio": 0.696533203125,
+    "Expansion Ratio": 1.149999976158142,
+    "Attack": 0.47589111328125,
+    "Release": 0.357177734375,
+    "Auto Release On/Off": 0.0,
+    "Output Gain": 2.29833984375,
+    "Makeup": 0.0,
+    "Dry/Wet": 1.0,
+    "Model": 1.0,
+    "Env Mode": 1.0,
+    "Knee": 6.0,
+    "LookAhead": 0.0,
+    "S/C Listen": 0.0,
+    "S/C On": 0.0,
+    "S/C Gain": 0.4000000059604645,
+    "S/C Mix": 1.0,
+    "S/C EQ Type": 5.0,
+    "S/C EQ On": 1.0,
+    "S/C EQ Freq": 0.15782640874385834,
+    "S/C EQ Gain": 0.0,
+    "S/C EQ Q": 0.40856707096099854
+  },
+  "notes": "Crew Love (Drake) vocal chain, slot 2 after vox-crewlove-drake-1-eq. 3.3:1, threshold -21.9 dB assuming the vocal sits near -18 LUFS (move threshold if gain reduction is far from 3-5 dB), attack 2.4 ms, release 195 ms, makeup +2.3 dB. DiffVox estimate."
+}

@@ -1,0 +1,313 @@
+[
+  {
+    "id": "phone-target-sub-dominance",
+    "symptom": "Mix sounds thin, quiet or empty on a phone, but fine on headphones. Short-form video audio has no impact.",
+    "applies_to": [
+      "short-form render",
+      "mixing",
+      "mastering"
+    ],
+    "detect": {
+      "method": "Band-share analysis of the bounced master (music/brand/capture/spectrum.py).",
+      "flag_when": "More than ~50% of total energy sits below 200Hz, or the 5kHz+ band is under 2%.",
+      "measured_examples": [
+        "lyrics: 83% of ALL energy between 20-80Hz, 0.0% above 8kHz",
+        "God told me not to: 70.7% at 40-80Hz",
+        "Billie Type Anti-Pop Club Mix: 1.9% at 40-80Hz, 46.9% at 2-8kHz - the one track that does NOT have the problem"
+      ]
+    },
+    "why": "Phone speakers reproduce almost nothing below ~300Hz. If most of the energy is sub-bass, the listener hears a thin, quiet track while the loudness budget is spent on frequencies their device physically cannot produce. This is a DELIVERY problem, not a mix fault - the same master can be correct on headphones and useless on a phone.",
+    "fix": {
+      "principle": "Do not change the artistic mix. Produce a separate short-form render whose audible band carries the level.",
+      "steps": [
+        "High-pass or low-shelf the master for the short-form render only",
+        "Re-normalise so the 300Hz-8kHz band carries the perceived level",
+        "Keep the original master untouched for streaming"
+      ]
+    },
+    "verify": "Re-run spectrum.py on the short-form render. Sub share should fall and the 500Hz-8kHz share should rise. Confirm on an actual phone speaker, not headphones.",
+    "evidence": "Measured across 23 bounced songs, 2026-08-24. All but one are sub-dominant with a near-zero air band.",
+    "added": "2026-08-25"
+  },
+  {
+    "id": "attribute-frequency-before-cutting",
+    "symptom": "A mix is described as muddy, boxy or harsh and the instinct is to EQ the vocal.",
+    "applies_to": [
+      "mixing",
+      "EQ"
+    ],
+    "detect": {
+      "method": "Measure band shares of each SOURCE separately, not just the full mix. Bounce a stem with the other elements muted, and analyse the raw beat/sample file directly from disk.",
+      "flag_when": "You are about to cut a frequency range without knowing which element owns it."
+    },
+    "why": "Cutting the wrong source does nothing at best and thins the wrong element at worst. Band ownership is a measurable fact, not a matter of opinion, and it takes seconds to check.",
+    "fix": {
+      "principle": "Attribute first, then cut the owner.",
+      "steps": [
+        "Measure the full mix",
+        "Mute everything except the element under suspicion and bounce it",
+        "Compare band shares; the element holding the largest share of the band owns the problem"
+      ]
+    },
+    "verify": "After the cut, re-measure. If the band share barely moves, you cut the wrong source.",
+    "evidence": "2026-08-24, 'wrong state of mind': -3.5dB at 300Hz applied to all 11 vocal tracks moved the mix's 200-500Hz share by only 0.4 percentage points. Vocals alone held 9.1% there; the beat held 18.8%. The beat owned the mud.",
+    "added": "2026-08-25"
+  },
+  {
+    "id": "never-lead-the-ear-model",
+    "symptom": "An audio-capable model confirms exactly the defect you suggested.",
+    "applies_to": [
+      "diagnosis",
+      "flow-music-ear"
+    ],
+    "detect": {
+      "method": "Read back your own prompt. Did you name a frequency range, an instrument, or a defect?",
+      "flag_when": "The model's answer reuses your terms."
+    },
+    "why": "These models agree with framing. A named range comes back as a confirmed defect, and you then 'fix' something that was never wrong.",
+    "fix": {
+      "principle": "Ask open questions, then verify any claim by measurement.",
+      "steps": [
+        "Ask it to describe the balance in its own words and say which element owns each range",
+        "Never name Hz values in the question",
+        "Confirm with spectrum.py before acting"
+      ]
+    },
+    "verify": "The measurement agrees with the model's unprompted description.",
+    "evidence": "2026-08-24: asked whether it heard 'harshness in 2-5kHz', Flow Music confirmed it. Measurement showed 2-5kHz was 1.7% of total energy - dull, not harsh. A 2.5dB cut was applied to an already-thin band on the strength of the echo.",
+    "added": "2026-08-25"
+  },
+  {
+    "id": "sycophantic-default-on-audio-critique",
+    "symptom": "An AI listener calls a clip clean, balanced and free of technical flaws.",
+    "applies_to": [
+      "diagnosis",
+      "flow-music-ear"
+    ],
+    "detect": {
+      "method": "Ask the same question twice: once plainly, once with an explicit blunt instruction.",
+      "flag_when": "The two answers disagree. The plain one is the flattery."
+    },
+    "why": "Music tools are built to encourage and to upsell edits. Their default register is praise, which is worthless as diagnosis.",
+    "fix": {
+      "principle": "Every critique prompt must carry: be blunt, do not be encouraging, do not offer a remix.",
+      "steps": [
+        "Include all three instructions",
+        "Ask for timestamps rather than adjectives"
+      ]
+    },
+    "verify": "The answer names a specific defect with a timestamp or a frequency range it chose itself.",
+    "evidence": "2026-08-24, identical audio: plain prompt returned 'clean production, well-balanced mix with no technical flaws'; blunt prompt returned 'raw, untreated vocal, proximity mud in 200-500Hz'.",
+    "added": "2026-08-25"
+  },
+  {
+    "id": "arrangement-record-is-destructive",
+    "symptom": "About to record into the arrangement.",
+    "applies_to": [
+      "capture",
+      "recording",
+      "safety"
+    ],
+    "detect": {
+      "method": "Write the desired arm state to EVERY track with j_arm, which returns the resulting LOM value and echoes the track index.",
+      "flag_when": "Any track other than the capture track reports armed, or its state cannot be confirmed."
+    },
+    "why": "Arrangement record writes to every armed track. Isaiah's sets routinely ship with vocal takes armed - 'Beautiful' had 14 - so recording without disarming records straight over finished vocals.",
+    "fix": {
+      "principle": "Fail closed. Only record from a verified-safe state.",
+      "steps": [
+        "Disarm every track, arm only the capture track",
+        "Confirm via j_arm's own return value, never via AbletonOSC get_track_arm",
+        "Group tracks raise 'cannot be armed' - benign, skip them",
+        "Disable song loop and confirm through get_song_status, or the take records over itself",
+        "Never save. Discarding leaves every .als byte-identical."
+      ]
+    },
+    "verify": "Every non-capture track returns arm=0, and get_song_status reports loop=false.",
+    "evidence": "2026-08-24: Isaiah caught a run recording over vocal takes with 14 tracks armed and transport loop on.",
+    "added": "2026-08-25"
+  },
+  {
+    "id": "abletonosc-reads-are-unreliable",
+    "symptom": "A state read contradicts what Live is actually doing, or two identical reads disagree.",
+    "applies_to": [
+      "automation",
+      "safety"
+    ],
+    "detect": {
+      "method": "Read the same property twice in a row and compare.",
+      "flag_when": "The two sweeps disagree, or a verified write reports the wrong resulting value."
+    },
+    "why": "The AbletonOSC request/response path mismatches responses to requests, so a read can return another request's answer. Acting on a wrong 'not armed' or 'not muted' read is how takes get destroyed and measurements get faked.",
+    "fix": {
+      "principle": "Trust writes that self-verify on Live's main thread, or trust the audio. Never trust a bare read.",
+      "steps": [
+        "Prefer jarvis-port handlers that set and read back in one main-thread call",
+        "For anything safety-critical, confirm by a second independent route",
+        "When in doubt, bounce and measure - the audio cannot lie"
+      ]
+    },
+    "verify": "Two independent routes agree.",
+    "evidence": "2026-08-24: two identical arm sweeps of one set disagreed on six tracks. mute_track reported 'unverified, actual 0' while the mute had in fact applied - proven because the bounced spectrum changed.",
+    "added": "2026-08-25"
+  },
+  {
+    "id": "silent-no-op-kwargs",
+    "symptom": "A Live Pilot call returns success but nothing changes.",
+    "applies_to": [
+      "automation"
+    ],
+    "detect": {
+      "method": "Check the argument names against ableton_bridge.py's schema before calling.",
+      "flag_when": "A call reports success and the observable state is unchanged."
+    },
+    "why": "Several bridge functions read their arguments by exact keyword. A wrong name arrives as None and the call silently does nothing while still reporting success. set_loop also sends fire-and-forget and returns success unconditionally.",
+    "fix": {
+      "principle": "Confirm the effect, not the return value.",
+      "steps": [
+        "mute_track takes 'muted', not 'mute'",
+        "set_device_parameter_by_name takes 'param_name', not 'parameter_name'",
+        "set_loop takes 0/1, not a bool, and never confirms anything"
+      ]
+    },
+    "verify": "Read the resulting state back through the jarvis port, or measure the audio.",
+    "evidence": "2026-08-24 and 2026-08-25: set_loop with a bool did nothing while returning success; mute_track with 'mute' left both beat tracks audible and produced a 'vocals only' bounce identical to the full mix.",
+    "added": "2026-08-25"
+  },
+  {
+    "id": "live-must-be-visible",
+    "symptom": "A project never loads, or a dialog is never answered, and the automation stalls silently.",
+    "applies_to": [
+      "automation"
+    ],
+    "detect": {
+      "method": "IsIconic on the main window, and check whether GetWindowRect returns large negative coordinates.",
+      "flag_when": "Live is minimized, or clicks appear to land with no effect."
+    },
+    "why": "Windows parks minimized windows off-screen and drops shell-open requests sent to them. Physical clicks land on whatever app is genuinely on top, and Windows forbids a background process from stealing focus, so raising Live may simply fail.",
+    "fix": {
+      "principle": "Restore Live first, and post clicks to the window handle rather than moving the cursor.",
+      "steps": [
+        "ShowWindow(SW_RESTORE) before any open or click",
+        "Detect a modal by testing whether the MAIN window is disabled - exact, unlike matching small untitled windows, which matches phantoms",
+        "PostMessage WM_LBUTTONDOWN/UP to the dialog's hwnd with client coordinates"
+      ]
+    },
+    "verify": "The dialog disappears and the expected set name appears in the window title.",
+    "evidence": "2026-08-25: four dialog clicks landed in a browser because Live was minimized and the detector had matched a phantom window.",
+    "added": "2026-08-25"
+  },
+  {
+    "id": "clip-starts-mid-phrase",
+    "symptom": "A short-form clip feels like an unedited excerpt and loses the viewer immediately.",
+    "applies_to": [
+      "short-form",
+      "editing"
+    ],
+    "detect": {
+      "method": "Ask an ear model where the next clean musical start point is, or detect downbeats and section boundaries.",
+      "flag_when": "The clip begins mid-lyric or mid-bar."
+    },
+    "why": "This is an alignment fault, NOT a mix fault. No amount of EQ fixes it, and chasing it as a mix problem wastes a full bounce cycle.",
+    "fix": {
+      "principle": "Snap clip starts to detected downbeats and section boundaries.",
+      "steps": [
+        "Score candidate windows on a musical grid, not a blind 1-second grid"
+      ]
+    },
+    "verify": "The ear model reports it starts at a natural boundary.",
+    "evidence": "2026-08-24: Flow Music named 'the jarring, mid-phrase start' as the single biggest problem with a hook clip, and gave 0:03 as the next clean start - a timestamp nobody suggested to it.",
+    "added": "2026-08-25"
+  },
+  {
+    "id": "chroma-fails-on-loop-based-songs",
+    "symptom": "Chorus/hook detection returns near-identical scores for every window.",
+    "applies_to": [
+      "analysis",
+      "hook detection"
+    ],
+    "detect": {
+      "method": "Inspect the spread of the repetition score across candidate windows.",
+      "flag_when": "Values are saturated near 1.0 with no discrimination."
+    },
+    "why": "Songs built over a looping type beat have identical harmonic content start to finish, so chroma self-similarity says 'this repeats' about the entire track.",
+    "fix": {
+      "principle": "Use timbre, not harmony, and rescale within the song.",
+      "steps": [
+        "MFCC-based self-similarity tracks arrangement density and vocal texture, which do change at a chorus",
+        "Rescale each component to the song's own 10th-90th percentile range"
+      ]
+    },
+    "verify": "Scores spread out, and independent captures of the same song select the same moments.",
+    "evidence": "2026-08-24: chroma gave rep values of 0.986/0.990/0.989. After switching to MFCC, two separate recordings of the same song independently chose the same two timestamps.",
+    "added": "2026-08-25"
+  },
+  {
+    "id": "peak-normalising-cannot-add-loudness",
+    "symptom": "A render is filtered for phone playback but ends up no louder, or quieter, than the original.",
+    "applies_to": [
+      "short-form render",
+      "mastering"
+    ],
+    "detect": {
+      "method": "Compare audible-band (300Hz-8kHz) RMS before and after, and check the crest factor.",
+      "flag_when": "Source already peaks near 0dBFS, or crest factor rises after filtering."
+    },
+    "why": "These masters already peak at 0dBFS, so peak normalisation has no headroom to give. Worse, removing sub RAISES crest factor because the dense low energy that was filling the waveform is gone, leaving sparse transients that block any gain. Normalising on peak therefore leaves the audible band QUIETER than it started.",
+    "fix": {
+      "principle": "Limit, do not normalise. Set the gain from the audible-band RMS target, then round the peaks.",
+      "steps": [
+        "Compute gain to bring 300Hz-8kHz RMS to about -16 dBFS",
+        "Cap the gain (14dB) so a quiet source is not blown up",
+        "Soft-limit with tanh at -1dBFS - it rounds peaks instead of clipping them square"
+      ]
+    },
+    "verify": "Audible-band RMS rises and true peak stays at or below -1dBFS.",
+    "evidence": "2026-08-25: peak-normalised phone renders measured -1.4/-2.2/-4.0dB in the audible band. Crest factor on lyrics went 13.3 -> 21.4 after high-passing. After switching to audible-RMS targeting plus tanh limiting: +6.7dB (lyrics), +5.4dB (God told me not to), +2.0dB (wrong state of mind, already well balanced).",
+    "added": "2026-08-25"
+  },
+  {
+    "id": "gemini-ear-tempo-key-unreliable",
+    "symptom": "An ear model's tempo, key, or section timestamps disagree with the measured audio.",
+    "applies_to": [
+      "vocal pocket",
+      "arrangement",
+      "session setup"
+    ],
+    "detect": "Measure tempo from each Demucs stem and the key from harmonic chroma before trusting an ear model's numbers.",
+    "why": "Gemini 3.8 Flash (via OpenRouter input_audio) hears the texture and spectrum well, but it guesses tempo, key, and timestamps. Setting the session tempo from its answer would put the grid out of line with the beat.",
+    "fix": "Use the ear model for spectral and stylistic judgment (open frequency range, delivery, reverb space). Take tempo, key, and section boundaries from measurement: librosa beat_track per stem plus an agglomerative segment check.",
+    "verify": "Section boundaries land on 4 and 8 bar multiples at the measured tempo.",
+    "evidence": "2026-09-24, forworn 'i was born to be alone': Gemini said 150 BPM in F# minor with sections at 0:12/0:25/0:38/0:51. Measured 103.4-103.9 BPM on drums, bass, and other stems even when seeded at 150, with D minor chroma. Boundaries at 9.4/18.6/27.7s equal 4/8/12 bars at 103.4. Its spectral call (800Hz-3.5kHz open, heavy sub) matched the measured band energy: 80-200Hz at 85 dB vs 2-4kHz at 56 dB.",
+    "added": "2026-09-24"
+  },
+  {
+    "id": "utility-gain-silent-no-op",
+    "symptom": "add_utility_device reports success at a gain, but the Utility sits at 0 dB.",
+    "applies_to": [
+      "gain staging",
+      "automation"
+    ],
+    "detect": "Read the Utility Gain display string after adding it.",
+    "why": "The gain write in add_utility_device does not land, and direct set_device_parameter on the Utility Gain gives contradictory reads: raw 0.01 displayed +17.7 dB, raw 0.1 displayed +19.2 dB, and a set of 0 read back raw -1.0 while get_range said 0.00 dB.",
+    "fix": "Use set_track_volume with verify (0.85 = 0 dB, about 0.025 per dB near unity) and confirm the level in captured audio.",
+    "verify": "Capture via the Audient loop-back (sounddevice WASAPI device 'Loop-back 1/2 (Audient iD14)') and measure.",
+    "evidence": "2026-09-24 'Your Body': four add_utility_device calls at -4 dB all read 0.00 dB afterward. Fader moves (stems 0.75, vocal 0.90) moved the measured vocal-minus-beat median from -12.5 to -6.5 dB, as predicted.",
+    "added": "2026-09-24"
+  },
+  {
+    "id": "summed-limited-buses-still-clip",
+    "symptom": "A vocal bus or full mix peaks at 0.0 dBFS even though every vocal track ends in a limiter with a ceiling below 0.",
+    "applies_to": [
+      "mixing",
+      "gain staging",
+      "vocals"
+    ],
+    "detect": "Capture the bus alone (mute the beat group) and count samples >= -0.1 dBFS and consecutive full-scale runs. Check what sits AFTER the per-track limiters on the parent group.",
+    "why": "Per-track ceilings do not survive summing. Two limited groups (lead at -1, backing at -0.3) add together in the parent group, and a Glue Compressor with 0 dB makeup does not catch peaks.",
+    "fix": "Put one Limiter at the END of the parent vocal group, ceiling -1 dB, gain 0. Do not raise anything to compensate.",
+    "verify": "Re-capture: zero full-scale samples, bus peak at or below -1 dBFS plus return-track spill, RMS within 0.2 dB of before.",
+    "evidence": "2026-09-26, The Club Banger 0:40-1:19: vocals-only peak 0.0 -> -0.8 dBFS (RMS -16.0 -> -16.1); full mix 39 samples >= -0.1 dBFS with 5-sample flat tops -> 0, peak -0.8, RMS -14.4 -> -14.6. Master had no devices.",
+    "added": "2026-09-26"
+  }
+]

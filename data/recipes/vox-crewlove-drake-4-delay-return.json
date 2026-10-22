@@ -1,0 +1,17 @@
+{
+  "schema": "livepilot-plugin-recipe-v1",
+  "name": "vox-crewlove-drake-4-delay-return",
+  "plugin_name": "Delay",
+  "device_class": "AbletonDevice",
+  "value_units": "raw",
+  "params": {
+    "Dry/Wet": 1.0,
+    "L Sync": 0.0,
+    "Link": 1.0,
+    "L Time": 0.55474853515625,
+    "Feedback": 0.51171875,
+    "Filter On": 1.0,
+    "Filter Freq": 0.53924560546875
+  },
+  "notes": "Crew Love (Drake) vocal chain, stock Delay on a return at 100% wet: unsynced 264 ms, linked, feedback 49%, filter on at 1.2 kHz (dark repeats). Vocal track send to this return: -25 dB (DiffVox put the delay about 25 dB under the direct vocal). In the model the delay also feeds the reverb at about 40%; not wired here. Only the listed params were set; others are Delay defaults. Apply to a return device by name (save_plugin_recipe cannot snapshot return tracks)."
+}

@@ -1,0 +1,28 @@
+{
+  "schema": "livepilot-plugin-recipe-v1",
+  "name": "vox_present_2_solid_dynamics",
+  "plugin_name": "",
+  "device_class": "",
+  "params": {
+    "Device On": 1.0,
+    "Knee Type": 0.0,
+    "Threshold Comp": 0.9300000071525574,
+    "Ratio": 0.75,
+    "Atk Mode Comp": 1.0,
+    "Release Comp": 0.2733496427536011,
+    "Rel.Mode": 1.0,
+    "Output": 0.8050000071525574,
+    "Dry": 0.0,
+    "Link L/R": 1.0,
+    "Boost": 0.0,
+    "-": 0.0,
+    "Mode": 0.0,
+    "Threshold G/E": 0.75,
+    "Range": 0.0,
+    "Atk Mode G/E": 0.0,
+    "Release G/E": 0.5,
+    "SC Mode": 0.0,
+    "SC Gain": 0.5
+  },
+  "notes": "Lead vocal chain 2/5: SSL comp -18 dB thr, 3.8:1, fast atk, auto rel, gate off"
+}

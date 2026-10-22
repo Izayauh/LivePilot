@@ -1,0 +1,13 @@
+# Dependencies for Ableton Crash Recovery System
+
+# Process management
+psutil>=5.9.0
+
+# GUI automation for recovery dialogs
+pyautogui>=0.9.53
+pygetwindow>=0.0.9
+
+# Existing dependencies (should already be installed)
+# python-osc>=1.8.0
+# google-generativeai>=0.8.0
+

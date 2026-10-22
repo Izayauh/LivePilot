@@ -1,0 +1,12 @@
+============================================================
+Frequency Normalization Fix - Sanity Test
+============================================================
+  [PASS] EQ Eight        Band 1 Frequency         95 Hz -> 0.2925  (freq_log)
+  [PASS] EQ Eight        Band 2 Frequency        300 Hz -> 0.4419  (freq_log)
+  [PASS] EQ Eight        Band 5 Frequency       4800 Hz -> 0.8022  (freq_log)
+  [PASS] EQ Eight        Band 8 Frequency      12500 Hz -> 0.9265  (freq_log)
+  [PASS] Saturator       Frequency              7000 Hz -> 0.8512  (freq_log)
+  [PASS] Delay           Filter Low              220 Hz -> 0.4016  (freq_log)
+  [PASS] Delay           Filter High            6500 Hz -> 0.8416  (freq_log)
+
+If all show 'freq_log' and normalized values between 0-1, the fix works.

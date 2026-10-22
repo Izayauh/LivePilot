@@ -1,0 +1,307 @@
+{
+  "version": "2.0",
+  "description": "AbletonOSC path configuration based on official documentation - Extended for advanced control",
+  "paths": {
+    "song": {
+      "play": {
+        "path": "/live/song/start_playing",
+        "params": [],
+        "description": "Start session playback"
+      },
+      "stop": {
+        "path": "/live/song/stop_playing",
+        "params": [],
+        "description": "Stop session playback"
+      },
+      "continue": {
+        "path": "/live/song/continue_playing",
+        "params": [],
+        "description": "Resume session playback"
+      },
+      "record_mode": {
+        "path": "/live/song/set/record_mode",
+        "params": ["record_mode"],
+        "description": "Set record mode (1=on, 0=off)"
+      },
+      "tempo": {
+        "path": "/live/song/set/tempo",
+        "params": ["tempo_bpm"],
+        "description": "Set tempo in BPM"
+      },
+      "metronome": {
+        "path": "/live/song/set/metronome",
+        "params": ["metronome_on"],
+        "description": "Set metronome (1=on, 0=off)"
+      },
+      "loop": {
+        "path": "/live/song/set/loop",
+        "params": ["loop"],
+        "description": "Set loop (1=on, 0=off)"
+      },
+      "loop_start": {
+        "path": "/live/song/set/loop_start",
+        "params": ["loop_start"],
+        "description": "Set loop start in beats"
+      },
+      "loop_length": {
+        "path": "/live/song/set/loop_length",
+        "params": ["loop_length"],
+        "description": "Set loop length in beats"
+      },
+      "position": {
+        "path": "/live/song/set/current_song_time",
+        "params": ["current_song_time"],
+        "description": "Set playback position in beats"
+      },
+      "stop_all_clips": {
+        "path": "/live/song/stop_all_clips",
+        "params": [],
+        "description": "Stop all clips"
+      },
+      "create_audio_track": {
+        "path": "/live/song/create_audio_track",
+        "params": ["index"],
+        "description": "Create audio track at index (-1 = end)"
+      },
+      "create_midi_track": {
+        "path": "/live/song/create_midi_track",
+        "params": ["index"],
+        "description": "Create MIDI track at index (-1 = end)"
+      },
+      "create_return_track": {
+        "path": "/live/song/create_return_track",
+        "params": [],
+        "description": "Create a new return track"
+      },
+      "delete_track": {
+        "path": "/live/song/delete_track",
+        "params": ["track_index"],
+        "description": "Delete a track"
+      },
+      "delete_return_track": {
+        "path": "/live/song/delete_return_track",
+        "params": ["track_index"],
+        "description": "Delete a return track"
+      },
+      "duplicate_track": {
+        "path": "/live/song/duplicate_track",
+        "params": ["track_index"],
+        "description": "Duplicate a track"
+      },
+      "get_num_tracks": {
+        "path": "/live/song/get/num_tracks",
+        "params": [],
+        "description": "Query number of tracks"
+      },
+      "get_num_scenes": {
+        "path": "/live/song/get/num_scenes",
+        "params": [],
+        "description": "Query number of scenes"
+      },
+      "get_track_names": {
+        "path": "/live/song/get/track_names",
+        "params": [],
+        "description": "Query all track names"
+      }
+    },
+    "track": {
+      "mute": {
+        "path": "/live/track/set/mute",
+        "params": ["track_id", "mute"],
+        "description": "Set track mute (1=on, 0=off)"
+      },
+      "solo": {
+        "path": "/live/track/set/solo",
+        "params": ["track_id", "solo"],
+        "description": "Set track solo (1=on, 0=off)"
+      },
+      "arm": {
+        "path": "/live/track/set/arm",
+        "params": ["track_id", "armed"],
+        "description": "Set track arm (1=on, 0=off)"
+      },
+      "volume": {
+        "path": "/live/track/set/volume",
+        "params": ["track_id", "volume"],
+        "description": "Set track volume (0.0-1.0)"
+      },
+      "panning": {
+        "path": "/live/track/set/panning",
+        "params": ["track_id", "panning"],
+        "description": "Set track pan (-1.0 to 1.0)"
+      },
+      "send": {
+        "path": "/live/track/set/send",
+        "params": ["track_id", "send_id", "value"],
+        "description": "Set track send level (0.0-1.0)"
+      },
+      "name": {
+        "path": "/live/track/set/name",
+        "params": ["track_id", "name"],
+        "description": "Set track name"
+      },
+      "color_index": {
+        "path": "/live/track/set/color_index",
+        "params": ["track_id", "color_index"],
+        "description": "Set track color (0-69)"
+      },
+      "stop_all_clips": {
+        "path": "/live/track/stop_all_clips",
+        "params": ["track_id"],
+        "description": "Stop all clips on track"
+      },
+      "get_num_devices": {
+        "path": "/live/track/get/num_devices",
+        "params": ["track_id"],
+        "description": "Query number of devices on track"
+      },
+      "get_devices_name": {
+        "path": "/live/track/get/devices/name",
+        "params": ["track_id"],
+        "description": "Query all device names on track"
+      },
+      "get_devices_type": {
+        "path": "/live/track/get/devices/type",
+        "params": ["track_id"],
+        "description": "Query all device types on track"
+      },
+      "get_devices_class": {
+        "path": "/live/track/get/devices/class_name",
+        "params": ["track_id"],
+        "description": "Query all device class names on track"
+      }
+    },
+    "scene": {
+      "fire": {
+        "path": "/live/scene/fire",
+        "params": ["scene_id"],
+        "description": "Fire/trigger a scene"
+      }
+    },
+    "clip": {
+      "fire": {
+        "path": "/live/clip/fire",
+        "params": ["track_id", "clip_id"],
+        "description": "Fire/start a clip"
+      },
+      "stop": {
+        "path": "/live/clip/stop",
+        "params": ["track_id", "clip_id"],
+        "description": "Stop a clip"
+      }
+    },
+    "clip_slot": {
+      "fire": {
+        "path": "/live/clip_slot/fire",
+        "params": ["track_index", "clip_index"],
+        "description": "Fire/trigger a clip slot"
+      }
+    },
+    "device": {
+      "get_name": {
+        "path": "/live/device/get/name",
+        "params": ["track_id", "device_id"],
+        "description": "Get device name"
+      },
+      "get_class_name": {
+        "path": "/live/device/get/class_name",
+        "params": ["track_id", "device_id"],
+        "description": "Get device class name (e.g., Reverb, Compressor)"
+      },
+      "get_type": {
+        "path": "/live/device/get/type",
+        "params": ["track_id", "device_id"],
+        "description": "Get device type (1=audio_effect, 2=instrument, 4=midi_effect)"
+      },
+      "get_num_parameters": {
+        "path": "/live/device/get/num_parameters",
+        "params": ["track_id", "device_id"],
+        "description": "Get number of device parameters"
+      },
+      "get_parameters_name": {
+        "path": "/live/device/get/parameters/name",
+        "params": ["track_id", "device_id"],
+        "description": "Get all parameter names"
+      },
+      "get_parameters_value": {
+        "path": "/live/device/get/parameters/value",
+        "params": ["track_id", "device_id"],
+        "description": "Get all parameter values"
+      },
+      "get_parameters_min": {
+        "path": "/live/device/get/parameters/min",
+        "params": ["track_id", "device_id"],
+        "description": "Get all parameter minimum values"
+      },
+      "get_parameters_max": {
+        "path": "/live/device/get/parameters/max",
+        "params": ["track_id", "device_id"],
+        "description": "Get all parameter maximum values"
+      },
+      "get_parameter_value": {
+        "path": "/live/device/get/parameter/value",
+        "params": ["track_id", "device_id", "param_id"],
+        "description": "Get a specific parameter value"
+      },
+      "set_parameter_value": {
+        "path": "/live/device/set/parameter/value",
+        "params": ["track_id", "device_id", "param_id", "value"],
+        "description": "Set a specific parameter value"
+      },
+      "set_parameters_value": {
+        "path": "/live/device/set/parameters/value",
+        "params": ["track_id", "device_id", "value1", "value2", "..."],
+        "description": "Set all parameter values at once"
+      }
+    }
+  },
+  "notes": {
+    "indexing": "All indices are 0-based. Track 1 in Ableton = track_id 0 in OSC.",
+    "track_controls": "Track ID is the FIRST PARAMETER, not part of the path.",
+    "responses": "AbletonOSC sends responses on port 11001.",
+    "device_types": "Device type values: 1=audio_effect, 2=instrument, 4=midi_effect",
+    "color_palette": "Ableton color indices range from 0-69."
+  },
+  "limitations": {
+    "device_loading": {
+      "description": "AbletonOSC does NOT expose an OSC path to load/add devices to tracks.",
+      "solution": "JarvisDeviceLoader Remote Script provides device loading via OSC on port 11002.",
+      "installation": "Copy ableton_remote_script/JarvisDeviceLoader to C:\\ProgramData\\Ableton\\Live 11\\Resources\\MIDI Remote Scripts\\",
+      "status": "IMPLEMENTED - use add_plugin_to_track or create_plugin_chain voice commands"
+    },
+    "async_responses": {
+      "description": "OSC get/query operations are asynchronous - responses arrive on port 11001.",
+      "workaround": "For now, Jarvis focuses on setter functions that don't require responses."
+    }
+  },
+  "voice_command_examples": {
+    "track_management": [
+      "Create a new audio track",
+      "Add a MIDI track at position 2",
+      "Create a return track for reverb",
+      "Delete track 5",
+      "Duplicate track 3",
+      "Rename track 1 to Drums"
+    ],
+    "device_control": [
+      "What devices are on track 1?",
+      "Set parameter 5 on device 1 of track 2 to 0.7",
+      "Disable device 1 on track 3",
+      "Enable the reverb on track 2"
+    ],
+    "plugin_management": [
+      "Add EQ Eight to track 1",
+      "Add FabFilter Pro-Q to track 2",
+      "What compressors do I have?",
+      "Find plugin Pro-Q",
+      "Refresh the plugin list"
+    ],
+    "plugin_chains": [
+      "Create a Billie Eilish vocal chain on track 1",
+      "Make a hip hop vocal chain on track 2",
+      "Load a basic vocal preset on track 3",
+      "Create a drum bus chain on track 4",
+      "Make a master chain on the master track"
+    ]
+  }
+}

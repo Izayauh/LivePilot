@@ -1,0 +1,16 @@
+{
+  "schema": "livepilot-plugin-recipe-v1",
+  "name": "night-owl-piano-h-reverb-under-vocal",
+  "plugin_name": "H-Reverb",
+  "device_class": "PluginDevice",
+  "notes": "Dial H-Reverb back so the night-owl piano stays upfront and leaves space for lead vocal. Normalized 0-1 values. After apply, run get_device_parameters and adjust names if Waves reports different labels (e.g. Time vs Decay, Mix vs Dry/Wet). Re-save with save_plugin_recipe once verified.",
+  "target_hint": {
+    "track_query": "piano",
+    "device_name_contains": "H-Reverb"
+  },
+  "params": {
+    "Decay": 0.15,
+    "Dry/Wet": 0.35,
+    "Size": 0.3
+  }
+}

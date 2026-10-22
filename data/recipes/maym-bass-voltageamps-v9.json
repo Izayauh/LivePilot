@@ -1,0 +1,25 @@
+{
+  "schema": "livepilot-plugin-recipe-v1",
+  "name": "maym-bass-voltageamps-v9",
+  "plugin_name": "",
+  "device_class": "",
+  "params": {
+    "Device On": 1.0,
+    "Input": 1.0,
+    "Output": 1.0,
+    "Gain": 1.0,
+    "Mid": 1.0,
+    "Bass": 1.0,
+    "High": 1.0,
+    "HMid": 1.0,
+    "DriveMix": 1.0,
+    "DriveGain": 1.0,
+    "DriveTone": 1.0,
+    "DITone": 1.0,
+    "Amp-DI": 1.0,
+    "DILevel": 1.0,
+    "Cab Tone": 1.0,
+    "Room": 1.0
+  },
+  "notes": "Voltage Amps Bass settings for the MAYM bass match. DriveMix 0.25 / DriveGain 0.40 / DriveTone 0.50. Supplies harmonic character (T4) that filtering cannot create. Bypass-tested: not the source of dynamic-range limiting."
+}

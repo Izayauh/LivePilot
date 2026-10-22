@@ -1,0 +1,23 @@
+{
+  "schema": "livepilot-plugin-recipe-v1",
+  "name": "vox_present_4_replika",
+  "plugin_name": "",
+  "device_class": "",
+  "params": {
+    "Device On": 1.0,
+    "Time Mode": 0.0,
+    "Delay Time": 0.4000000059604645,
+    "Mix": 0.15000000596046448,
+    "Feedback": 0.20000000298023224,
+    "Stereo Mode": 0.5,
+    "-": 0.0,
+    "In": 0.7624049782752991,
+    "Out": 0.7624049782752991,
+    "Mode": 0.0,
+    "Saturation": 0.25,
+    "LoCut": 0.75,
+    "HiCut": 0.30000001192092896,
+    "Modulation": 0.0
+  },
+  "notes": "Lead vocal chain 4/5: 1/8 delay, 15% mix, 316 Hz-6 kHz band"
+}

@@ -1,0 +1,8 @@
+{
+  "schema": "livepilot-plugin-recipe-v1",
+  "name": "night-owl-kk-piano-foundation",
+  "plugin_name": "Kontakt",
+  "device_class": "PluginDevice",
+  "notes": "Night-owl piano foundation chain. Re-capture with save_plugin_recipe when Ableton is open to refresh params.",
+  "params": {}
+}

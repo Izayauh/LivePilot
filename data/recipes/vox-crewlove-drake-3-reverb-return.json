@@ -1,0 +1,14 @@
+{
+  "schema": "livepilot-plugin-recipe-v1",
+  "name": "vox-crewlove-drake-3-reverb-return",
+  "plugin_name": "Reverb",
+  "device_class": "AbletonDevice",
+  "value_units": "raw",
+  "params": {
+    "Dry/Wet": 1.0,
+    "Decay Time": 0.4559936225414276,
+    "HiFilter Freq": 0.8345947861671448,
+    "HiShelf Gain": 0.26249998807907104
+  },
+  "notes": "Crew Love (Drake) vocal chain, stock Reverb on a return at 100% wet: decay 2.7 s, HiFilter 5.3 kHz, HiShelf Gain 0.41 (dark tail). Vocal track send to this return: -24 dB (DiffVox put reverb about 28 dB under the direct vocal; a few dB added because Live's Reverb is quieter than the model's). Only the listed params were set; others are Reverb defaults. Apply to a return device by name with dial or set_parameters_by_name (save_plugin_recipe cannot snapshot return tracks)."
+}

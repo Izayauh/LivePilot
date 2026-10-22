@@ -1,0 +1,18 @@
+{
+  "schema": "livepilot-plugin-recipe-v1",
+  "name": "vocal_chain_t1_gambino",
+  "plugin_name": "Compressor",
+  "device_class": "AbletonDevice",
+  "params": {
+    "Device On": 1.0,
+    "Threshold": 0.32,
+    "Ratio": 0.65,
+    "Attack": 0.12,
+    "Release": 0.28,
+    "Auto Release": 1.0,
+    "Model": 0.0,
+    "Gain": 0.45,
+    "Dry/Wet": 1.0
+  },
+  "notes": "Target T1 (Childish Gambino - Me and Your Mama) vocal chain from Taste Profile Session 01. Vocal sits INSIDE the mix, pulled back and melting in rather than forward Drake/Weeknd placement. Heavy compression ratio and low threshold allow intense energy and screaming/belting (P1) without clipping or jumping out of the pocket."
+}

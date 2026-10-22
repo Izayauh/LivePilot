@@ -1,0 +1,18 @@
+{
+  "schema": "livepilot-plugin-recipe-v1",
+  "name": "vox_present_1_cleansweep",
+  "plugin_name": "",
+  "device_class": "",
+  "params": {
+    "Device On": 1.0,
+    "Highpass Cutoff": 0.23999999463558197,
+    "Lowpass Cutoff": 1.0,
+    "Highpass On/Off": 1.0,
+    "Lowpass On/Off": 1.0,
+    "Phase Rev.": 0.0,
+    "Input Gain": 0.5,
+    "Setting": 0.0,
+    "Bypass": 0.0
+  },
+  "notes": "Lead vocal chain 1/5: HPF 91 Hz"
+}

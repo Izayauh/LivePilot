@@ -1,0 +1,50 @@
+# Jarvis AI Audio Engineer - Python Dependencies
+
+# ================ Core AI ================
+# Google Gemini AI (primary AI engine)
+google-genai>=1.56.0
+
+# ================ OSC Communication ================
+# OSC for Ableton control
+python-osc>=1.9.3
+
+# ================ Audio ================
+# Audio input/output for voice control
+PyAudio>=0.2.14
+pyloudnorm>=0.1.1
+soundfile>=0.12.1
+sounddevice>=0.4.6
+librosa>=0.10.0
+scipy>=1.10.0
+
+# ================ Process Management ================
+# Ableton process lifecycle + stale MCP server sweep (instance_guard)
+psutil>=5.9.0
+
+# ================ Environment ================
+# Environment variable management
+python-dotenv>=1.2.1
+
+# ================ Data Structures ================
+# Enhanced data validation
+pydantic>=2.5.0
+
+# ================ Research ================
+# YouTube transcript extraction (for tutorial research)
+youtube-transcript-api>=0.6.2
+
+# Web scraping for documentation
+beautifulsoup4>=4.12.0
+lxml>=5.0.0
+requests>=2.31.0
+
+# Google API client (for YouTube search)
+google-api-python-client>=2.140.0
+
+# ================ Vector Database (Optional) ================
+# For semantic search in knowledge base
+# chromadb>=0.4.22
+
+# ================ Live Pilot Studio (studio/) ================
+# install.ps1 installs only this part. Everything above is the older MCP/OSC tooling.
+-r requirements-studio.txt
